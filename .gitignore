@@ -1,0 +1,55 @@
+# macOS / editor cruft
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Python / environments
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+.env
+*.key
+
+# Generated outputs: keep folder skeleton + README only
+outputs/**
+!outputs/
+!outputs/README_OUTPUTS.md
+!outputs/00_FINAL_CURATOR_PACKAGE/
+!outputs/00_FINAL_CURATOR_PACKAGE/.gitkeep
+!outputs/01_CURRENT_DRAFT_TABLES/
+!outputs/01_CURRENT_DRAFT_TABLES/.gitkeep
+!outputs/02_QC_SUMMARIES/
+!outputs/02_QC_SUMMARIES/.gitkeep
+!outputs/03_PER_PMID_INTERMEDIATES/
+!outputs/03_PER_PMID_INTERMEDIATES/.gitkeep
+!outputs/04_CODEX_ASSIST/
+!outputs/04_CODEX_ASSIST/.gitkeep
+!outputs/05_LOGS/
+!outputs/05_LOGS/.gitkeep
+!outputs/06_ARCHIVE_OLD/
+!outputs/06_ARCHIVE_OLD/.gitkeep
+!outputs/07_FINAL_CURATOR_APPROVED_MASTER/
+!outputs/07_FINAL_CURATOR_APPROVED_MASTER/.gitkeep
+
+# Raw/local data: keep config tables and data README only
+data/*.xlsx
+data/*.xls
+data/*.csv
+data/biosample_cache/
+data/sra_runinfo_cache/
+data/geo_cache/
+!data/pmid_corrections.tsv
+!data/special_pmid_handling.tsv
+!data/README_DATA.md
+
+# Papers / PDFs are local only
+papers/**
+!papers/
+!papers/README_PAPERS.md
+!papers/.gitkeep
+
+# Old scratch/prototype scripts are not part of human-facing pipeline
+scripts/prototype_old/

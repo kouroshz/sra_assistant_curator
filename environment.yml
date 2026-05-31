@@ -1,0 +1,17 @@
+name: sra_paper_curator
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pandas
+  - openpyxl
+  - numpy
+  - pyyaml
+  - tqdm
+  - rich
+  - pydantic
+  - pip
+  - pip:
+      - openai
+      - python-dotenv
+      - pypdf

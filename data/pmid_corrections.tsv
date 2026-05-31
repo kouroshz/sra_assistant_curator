@@ -1,0 +1,2 @@
+old_pmid	correct_pmid	correct_title	correct_doi	reason
+39242698	39636094	PfMORC protein regulates chromatin accessibility and transcriptional repression in the human malaria parasite, Plasmodium falciparum	10.7554/eLife.92499	Master rows are PRJNA994684 Plasmodium falciparum pKD_MORC +/-aTC RNA-seq from Le Roch lab; current PMID/title points to unrelated yak gut virome paper.

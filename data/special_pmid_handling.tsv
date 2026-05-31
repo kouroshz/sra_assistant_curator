@@ -1,0 +1,2 @@
+PMID	special_handling	curation_scope	review_unit	row_level_curation_recommended	sra_row_omics_override	experimental_factor_override	special_handling_note
+30320226	single_cell_cell_level_archive	dataset	timepoint_condition	no	single-cell RNA-seq / SCRB-seq DGE	nutrient	SRA rows are cell/well-level sequencing records from GEO GSE96066; do not curate 2310 SRR rows as independent biological samples. Use collapsed timepoint/condition review.
