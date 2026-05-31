@@ -1,45 +1,105 @@
 # SRA Assistant Curator
 
-A reproducible pipeline for turning a master RNA-seq/SRA/PubMed metadata sheet into curator-facing review tables and, after curator review, a rowwise curator-approved master table.
+A reproducible pipeline for converting a master RNA-seq/SRA/PubMed metadata workbook into curator-facing review tables and, after review, a rowwise curator-approved master table.
 
-## What this repo does
+## Purpose
 
-The pipeline starts from a master metadata workbook and local paper PDFs, then:
+This project helps curate SRA-linked RNA-seq metadata from papers.
 
-1. extracts PMID/SRA/BioSample metadata,
-2. adds paper/PDF context,
-3. creates a rowwise draft metadata table,
-4. collapses SRR-level rows into biological/sample-group review rows,
-5. creates a curator-facing review workbook,
-6. later merges curator decisions back into a final rowwise master table.
+The pipeline:
 
-## Main concept
+1. reads a master metadata workbook,
+2. fetches SRA RunInfo and BioSample metadata,
+3. extracts paper/PDF context,
+4. creates a rowwise draft metadata table,
+5. collapses SRR-level rows into biological/sample-group review rows,
+6. creates a curator-facing workbook,
+7. later merges curator decisions back into a final rowwise master table.
 
-Curators should not edit the original master sheet directly.
+## Key idea
+
+Curators should not edit the original master workbook directly.
 
 Instead:
 
     master workbook
-        -> rowwise pipeline draft
-        -> group-level curator review table
+        -> pipeline rowwise draft
+        -> group-level curator review workbook
         -> curator/app decisions
         -> final rowwise curator-approved master
 
-## Quick start
+## What is tracked by Git
+
+Tracked:
+
+- scripts/
+- docs/
+- environment.yml
+- README.md
+- data/pmid_corrections.tsv
+- data/special_pmid_handling.tsv
+- data/README_DATA.md
+- papers/README_PAPERS.md
+- outputs/README_OUTPUTS.md
+- empty output-folder placeholders
+
+Not tracked:
+
+- master Excel workbook
+- PDFs
+- SRA/BioSample caches
+- generated outputs
+- curator packages
+- Codex logs/notes
+- local credentials or API keys
+
+## Required local input files
+
+Place the master workbook here:
+
+    data/rna_seq_metadata_v1_2026-05-05.xlsx
+
+Place paper PDFs here:
+
+    papers/
+
+Recommended PDF naming:
+
+    <PMID>_<short_title>.pdf
+
+Example:
+
+    papers/31737630_TRIBE_Uncovers_RNA_Targets_of_Rrp6.pdf
+
+PDFs are local-only and are not committed to Git.
+
+## Setup
 
 Create the conda environment:
 
     conda env create -f environment.yml
     conda activate sra_paper_curator
 
-Add local input files, which are not tracked by Git:
+If the environment already exists:
 
-    data/rna_seq_metadata_v1_2026-05-05.xlsx
-    papers/*.pdf
+    conda activate sra_paper_curator
 
-Run the deterministic pipeline:
+## Reproduce the deterministic curator package
+
+Step 1: list candidate PMIDs and check metadata/PDF status.
 
     python scripts/06_list_pmid_candidates.py
+
+Step 2: optional open-access PDF download.
+
+    python scripts/15_download_open_access_pdfs.py \
+      --pmids-file outputs/pmids_needing_pdfs.tsv \
+      --email YOUR_EMAIL_HERE \
+      --sleep 1.0
+
+This downloader tries open-access routes such as PubMed/PMC/Europe PMC/publisher links where available. It will not retrieve every paper. Any remaining PDFs can be downloaded manually, including through institutional access, and placed in papers/.
+
+Step 3: run the deterministic batch pipeline.
 
     python scripts/16_run_batch_curator_pipeline.py \
       --email YOUR_EMAIL_HERE \
@@ -47,25 +107,63 @@ Run the deterministic pipeline:
       --make-review \
       --sort rows_asc
 
+Step 4: create the group-level curator review table.
+
     python scripts/19_make_group_level_curator_index.py
+
+Step 5: freeze the current rowwise draft table.
+
     python scripts/26_freeze_current_outputs.py
+
+Step 6: organize outputs.
+
+Preview first:
+
+    python scripts/27_organize_outputs.py
+
+Apply:
+
     python scripts/27_organize_outputs.py --apply
 
-The curator package will be under:
+## Main outputs
 
-    outputs/00_FINAL_CURATOR_PACKAGE/
+Curator package:
 
-The main curator workbook is:
+    outputs/00_FINAL_CURATOR_PACKAGE/curator_package.zip
 
-    curator_group_level_review_index_FOR_REVIEW.xlsx
+Main curator workbook:
 
-## Important output folders
+    outputs/00_FINAL_CURATOR_PACKAGE/curator_package/curator_group_level_review_index_FOR_REVIEW.xlsx
+
+Current rowwise draft table:
+
+    outputs/01_CURRENT_DRAFT_TABLES/all_pmids_agent_filled_master_rows_with_paper_context_CURRENT.tsv
+
+Special single-cell collapsed workbook:
+
+    outputs/00_FINAL_CURATOR_PACKAGE/curator_package/PMID_30320226_single_cell_collapsed_review.xlsx
+
+## Optional Codex assist
+
+Codex can generate conservative curator-assist notes. These are optional and not authoritative.
+
+Run selected PMIDs:
+
+    ./scripts/24_run_codex_curator_assist_selected.sh "31737630,32552779"
+
+Merge Codex notes:
+
+    python scripts/25_merge_codex_curator_assist.py
+
+Codex notes should help curators identify ambiguities, but they do not replace human review.
+
+## Output folder guide
 
     outputs/00_FINAL_CURATOR_PACKAGE
         Files to share with curators.
 
     outputs/01_CURRENT_DRAFT_TABLES
-        Current pipeline-generated draft tables, not curator-final.
+        Current pipeline-generated draft tables. Not curator-final.
 
     outputs/02_QC_SUMMARIES
         Run status, PDF status, PMID lists, Codex coverage, and QC files.
@@ -74,32 +172,29 @@ The main curator workbook is:
         Per-PMID audit/debug files.
 
     outputs/04_CODEX_ASSIST
-        Optional Codex-generated curator notes.
+        Optional Codex-generated notes, prompts, and logs.
+
+    outputs/05_LOGS
+        Batch pipeline logs.
+
+    outputs/06_ARCHIVE_OLD
+        Old/stale/incomplete outputs retained for safety.
 
     outputs/07_FINAL_CURATOR_APPROVED_MASTER
-        Final rowwise outputs after curator review and merge-back.
+        Reserved for final rowwise curator-approved metadata after merge-back.
 
 ## More detailed guides
 
-Start here:
-
-- `docs/QUICKSTART.md` — exact commands to reproduce.
-- `docs/PIPELINE_OVERVIEW.md` — what each major script does.
-- `docs/CURATOR_WORKFLOW.md` — how curator review and merge-back should work.
-- `docs/OUTPUTS_GUIDE.md` — what each output folder means.
-- `docs/CURATOR_APP_SPEC.md` — guidance for building/updating a curator app.
-- `docs/MERGE_BACK_PLAN.md` — plan for final rowwise master generation.
-
-## Optional Codex/LLM assist
-
-Codex notes are optional and assistive only. They should not overwrite metadata. Human curators make final decisions.
-
-See:
-
-    docs/CODEX_ASSIST.md
+- docs/QUICKSTART.md
+- docs/PIPELINE_OVERVIEW.md
+- docs/OUTPUTS_GUIDE.md
+- docs/CURATOR_WORKFLOW.md
+- docs/CURATOR_APP_SPEC.md
+- docs/MERGE_BACK_PLAN.md
+- docs/CODEX_ASSIST.md
 
 ## Current development status
 
-The deterministic curator package workflow is working.
+The deterministic pipeline and curator-package workflow are working.
 
-The next planned step is to add stable `curation_group_id` values and implement the merge-back script that applies curator decisions to the rowwise draft table.
+The next planned engineering step is to add stable curation_group_id values and implement the merge-back script that applies curator decisions to the rowwise draft table.

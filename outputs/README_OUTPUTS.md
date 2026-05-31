@@ -24,7 +24,9 @@ Important rowwise draft:
 
     all_pmids_agent_filled_master_rows_with_paper_context_CURRENT.tsv
 
-This is not curator-final. It is the current rowwise draft that will later receive curator-approved corrections.
+This is the current rowwise populated draft.
+
+It is not curator-final.
 
 ### 02_QC_SUMMARIES
 
@@ -33,6 +35,8 @@ Run status, PDF status, candidate PMID lists, Codex coverage, and organization p
 ### 03_PER_PMID_INTERMEDIATES
 
 Per-PMID intermediate files for audit/debugging.
+
+Use this when one PMID needs investigation.
 
 ### 04_CODEX_ASSIST
 
@@ -58,3 +62,9 @@ Expected future files:
     rna_seq_metadata_v1_2026-05-05.curator_final.xlsx
     curator_mergeback_audit.tsv
     curator_mergeback_summary.tsv
+
+## Important distinction
+
+01_CURRENT_DRAFT_TABLES contains draft pipeline results.
+
+07_FINAL_CURATOR_APPROVED_MASTER will contain final curator-approved rowwise metadata.

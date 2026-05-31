@@ -1,13 +1,13 @@
 # Quickstart
 
-This guide is for someone reproducing the pipeline locally.
+This guide is for reproducing the pipeline locally.
 
-## 1. Clone repo
+## 1. Clone the repo
 
     git clone https://github.com/kouroshz/sra_assistant_curator.git
     cd sra_assistant_curator
 
-## 2. Create conda environment
+## 2. Create the conda environment
 
     conda env create -f environment.yml
     conda activate sra_paper_curator
@@ -16,19 +16,25 @@ If the environment already exists:
 
     conda activate sra_paper_curator
 
-## 3. Add local input files
+## 3. Place local input files
 
-These files are required locally but are not tracked by Git.
+The repo does not track raw data files, PDFs, or generated outputs.
 
-Main master workbook:
+### Master workbook
+
+Place the master workbook here:
 
     data/rna_seq_metadata_v1_2026-05-05.xlsx
 
-Paper PDFs:
+This file is required.
 
-    papers/*.pdf
+### Papers/PDFs
 
-Recommended PDF naming:
+Place paper PDFs here:
+
+    papers/
+
+Recommended naming:
 
     <PMID>_<short_title>.pdf
 
@@ -36,15 +42,57 @@ Example:
 
     papers/31737630_TRIBE_Uncovers_RNA_Targets_of_Rrp6.pdf
 
-## 4. Confirm candidate PMIDs
+PDFs are not committed to Git.
+
+## 4. Create/check the PMID list
+
+Run:
 
     python scripts/06_list_pmid_candidates.py
 
-Output:
+This summarizes candidate PMIDs, row counts, BioProjects, library strategies, and PDF status.
+
+Useful outputs may include:
 
     outputs/pmid_candidates.tsv
+    outputs/pmids_needing_pdfs.tsv
 
-## 5. Run deterministic batch pipeline
+## 5. Get papers/PDFs
+
+There are two options.
+
+### Option A: open-access PDF downloader
+
+The repository includes an open-access PDF downloader:
+
+    python scripts/15_download_open_access_pdfs.py \
+      --pmids-file outputs/pmids_needing_pdfs.tsv \
+      --email YOUR_EMAIL_HERE \
+      --sleep 1.0
+
+This tries open-access routes such as PubMed/PMC/Europe PMC/publisher PDF links where available.
+
+It will not find every PDF. Some papers still need manual download.
+
+Downloaded PDFs are placed in:
+
+    papers/
+
+### Option B: manual download
+
+Manually download PDFs, including through institutional access if needed, and place them in:
+
+    papers/
+
+Use filenames that start with the PMID when possible:
+
+    papers/<PMID>_<short_title>.pdf
+
+Example:
+
+    papers/37833314_Extracellular_vesicles.pdf
+
+## 6. Run the deterministic pipeline
 
     python scripts/16_run_batch_curator_pipeline.py \
       --email YOUR_EMAIL_HERE \
@@ -52,55 +100,53 @@ Output:
       --make-review \
       --sort rows_asc
 
-This creates per-PMID populated rows, paper context files, and review workbooks.
+This creates per-PMID rowwise outputs and curator review workbooks.
 
-## 6. Create group-level curator review table
+## 7. Create group-level curator review table
 
     python scripts/19_make_group_level_curator_index.py
 
 This collapses SRR-level rows into biological/sample-group rows.
 
-## 7. Freeze current rowwise draft
+The resulting workbook is the main curator-facing table.
+
+## 8. Freeze the current rowwise draft
 
     python scripts/26_freeze_current_outputs.py
 
-Main current rowwise draft:
+This creates the current all-PMID rowwise draft table:
 
     outputs/all_pmids_agent_filled_master_rows_with_paper_context_CURRENT.tsv
 
-After organization, this moves to:
+After organization, it will be in:
 
     outputs/01_CURRENT_DRAFT_TABLES/all_pmids_agent_filled_master_rows_with_paper_context_CURRENT.tsv
 
-## 8. Organize outputs
+## 9. Organize outputs
 
-Preview first:
+Preview organization:
 
     python scripts/27_organize_outputs.py
 
-Apply:
+Apply organization:
 
     python scripts/27_organize_outputs.py --apply
 
-## 9. Curator package
+## 10. Find the curator package
 
-The files to share with curators are in:
-
-    outputs/00_FINAL_CURATOR_PACKAGE/
-
-Main zip:
+Curator package:
 
     outputs/00_FINAL_CURATOR_PACKAGE/curator_package.zip
 
-Main workbook inside the package:
+Main curator workbook inside the package:
 
     curator_group_level_review_index_FOR_REVIEW.xlsx
 
-Special case:
+Special single-cell collapsed workbook:
 
     PMID_30320226_single_cell_collapsed_review.xlsx
 
-## 10. Optional Codex assist
+## 11. Optional Codex assist
 
 Codex is optional.
 
@@ -112,17 +158,21 @@ Merge Codex notes:
 
     python scripts/25_merge_codex_curator_assist.py
 
-Codex notes are assistive only.
+Codex notes are assistive only. Human curators make final decisions.
 
-## 11. Final master creation
+## 12. Final master creation
 
-Not yet fully implemented.
+The final rowwise curator-approved master is created after curator review.
 
-Planned final step:
+Planned final logic:
 
-    curator review decisions
-        + current rowwise draft
-        -> final rowwise curator-approved master table
+    current rowwise draft
+        + curator group-level decisions
+        -> final rowwise curator-approved master
+
+Expected future folder:
+
+    outputs/07_FINAL_CURATOR_APPROVED_MASTER/
 
 See:
 

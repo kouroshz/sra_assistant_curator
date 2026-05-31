@@ -1,19 +1,43 @@
 # Data Directory
 
-This folder contains configuration files tracked by Git and local data files not tracked by Git.
+This folder contains small tracked configuration files and local data files that are not tracked by Git.
 
 ## Tracked files
 
-- pmid_corrections.tsv
-- special_pmid_handling.tsv
-- README_DATA.md
+These are safe to keep in Git:
 
-## Local files not tracked
+    pmid_corrections.tsv
+    special_pmid_handling.tsv
+    README_DATA.md
 
-- rna_seq_metadata_v1_2026-05-05.xlsx
-- *_SraRunTable.csv
-- biosample_cache/
-- sra_runinfo_cache/
-- geo_cache/
+## Required local file
 
-The master workbook and caches must be obtained or shared separately.
+Place the master workbook here:
+
+    data/rna_seq_metadata_v1_2026-05-05.xlsx
+
+This file is not tracked by Git.
+
+## Generated local caches
+
+The pipeline may create:
+
+    data/biosample_cache/
+    data/sra_runinfo_cache/
+    data/geo_cache/
+
+These are useful for reproducibility and speed, but they are generated/local files and are not tracked by Git.
+
+## Other local files
+
+Some workflows may use local SRA RunTable files, for example:
+
+    *_SraRunTable.csv
+
+These are not tracked by Git.
+
+## Important note
+
+The original master workbook should not be overwritten by curator review.
+
+The final reviewed table should be written as a new output file after merge-back.
