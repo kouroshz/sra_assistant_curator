@@ -59,13 +59,24 @@ def load_env() -> None:
         load_dotenv(Path(".env"))
 
 
-def urlopen_text(url: str, timeout: int = 60) -> str:
+def urlopen_text(url: str, timeout: int = 60, retries: int = 5, backoff: float = 2.0) -> str:
     req = urllib.request.Request(
         url,
         headers={"User-Agent": "sra_paper_curator/0.1"},
     )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return resp.read().decode("utf-8", errors="replace")
+
+    last_error = None
+    for attempt in range(retries):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return resp.read().decode("utf-8", errors="replace")
+        except Exception as e:
+            last_error = e
+            # Back off especially for HTTP 429 / transient failures.
+            sleep_time = backoff * (attempt + 1)
+            time.sleep(sleep_time)
+
+    raise last_error
 
 
 def add_eutils_params(params: dict) -> dict:
