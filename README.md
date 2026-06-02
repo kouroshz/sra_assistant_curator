@@ -50,14 +50,14 @@ Not tracked:
 - SRA/BioSample caches
 - generated outputs
 - curator packages
-- Codex logs/notes
+- agentic AI logs/notes
 - local credentials or API keys
 
 ## Required local input files
 
 Place the master workbook here:
 
-    data/rna_seq_metadata_v1_2026-05-05.xlsx
+    data/rna_seq_metadata_2026-05-05_original.xlsx
 
 Place paper PDFs here:
 
@@ -143,19 +143,19 @@ Special single-cell collapsed workbook:
 
     outputs/00_FINAL_CURATOR_PACKAGE/curator_package/PMID_30320226_single_cell_collapsed_review.xlsx
 
-## Optional Codex assist
+## Optional agentic AI assist
 
-Codex can generate conservative curator-assist notes. These are optional and not authoritative.
+agentic AI can generate conservative curator-assist notes. These are optional and not authoritative.
 
 Run selected PMIDs:
 
-    ./scripts/24_run_codex_curator_assist_selected.sh "31737630,32552779"
+    ./scripts/24_run_agentic_ai_curator_assist_selected.sh "31737630,32552779"
 
-Merge Codex notes:
+Merge agentic AI notes:
 
-    python scripts/25_merge_codex_curator_assist.py
+    python scripts/25_merge_agentic_ai_curator_assist.py
 
-Codex notes should help curators identify ambiguities, but they do not replace human review.
+agentic AI notes should help curators identify ambiguities, but they do not replace human review.
 
 ## Output folder guide
 
@@ -166,13 +166,13 @@ Codex notes should help curators identify ambiguities, but they do not replace h
         Current pipeline-generated draft tables. Not curator-final.
 
     outputs/02_QC_SUMMARIES
-        Run status, PDF status, PMID lists, Codex coverage, and QC files.
+        Run status, PDF status, PMID lists, agentic AI coverage, and QC files.
 
     outputs/03_PER_PMID_INTERMEDIATES
         Per-PMID audit/debug files.
 
-    outputs/04_CODEX_ASSIST
-        Optional Codex-generated notes, prompts, and logs.
+    outputs/04_AGENTIC_AI_ASSIST
+        Optional agentic AI-generated notes, prompts, and logs.
 
     outputs/05_LOGS
         Batch pipeline logs.
@@ -191,7 +191,7 @@ Codex notes should help curators identify ambiguities, but they do not replace h
 - docs/CURATOR_WORKFLOW.md
 - docs/CURATOR_APP_SPEC.md
 - docs/MERGE_BACK_PLAN.md
-- docs/CODEX_ASSIST.md
+- docs/AGENTIC_AI_ASSIST.md
 
 ## Current development status
 

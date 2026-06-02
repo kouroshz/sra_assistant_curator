@@ -57,9 +57,9 @@ Curators should not edit the original master workbook directly.
 
 Curators should not overwrite pipeline columns unless using the designated corrected_* fields.
 
-## Optional Codex notes
+## Optional agentic AI notes
 
-Codex notes may help identify ambiguous controls, condition labels, or special cases.
+agentic AI notes may help identify ambiguous controls, condition labels, or special cases.
 
 They are assistive only.
 
@@ -70,7 +70,7 @@ Human curators make final decisions.
 A curator app should:
 
 1. read the group-level review table,
-2. display paper/context/Codex evidence,
+2. display paper/context/agentic AI evidence,
 3. collect curator decisions,
 4. write a curator decision table,
 5. trigger or support merge-back into a final rowwise master table.

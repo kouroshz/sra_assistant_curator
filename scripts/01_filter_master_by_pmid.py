@@ -10,7 +10,7 @@ DATA = ROOT / "data"
 OUT = ROOT / "outputs"
 OUT.mkdir(exist_ok=True)
 
-MASTER = DATA / "rna_seq_metadata_v1_2026-05-05.xlsx"
+MASTER = DATA / "rna_seq_metadata_2026-05-05_original.xlsx"
 
 
 CURATION_COLUMNS = [

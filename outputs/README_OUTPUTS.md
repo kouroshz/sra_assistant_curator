@@ -30,7 +30,7 @@ It is not curator-final.
 
 ### 02_QC_SUMMARIES
 
-Run status, PDF status, candidate PMID lists, Codex coverage, and organization plans.
+Run status, PDF status, candidate PMID lists, agentic AI coverage, and organization plans.
 
 ### 03_PER_PMID_INTERMEDIATES
 
@@ -38,11 +38,11 @@ Per-PMID intermediate files for audit/debugging.
 
 Use this when one PMID needs investigation.
 
-### 04_CODEX_ASSIST
+### 04_AGENTIC_AI_ASSIST
 
-Optional Codex notes, prompts, and logs.
+Optional agentic AI notes, prompts, and logs.
 
-Codex notes are assistive only, not authoritative.
+agentic AI notes are assistive only, not authoritative.
 
 ### 05_LOGS
 

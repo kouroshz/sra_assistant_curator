@@ -90,17 +90,17 @@ Moves D2/D4/D6/D8/D10 labels into developmental timepoint fields.
 
 Handles PfArp4/GlcN and WT GlcN control interpretation.
 
-## Optional Codex assist
+## Optional agentic AI assist
 
-### 24_run_codex_curator_assist_selected.sh
+### 24_run_agentic_ai_curator_assist_selected.sh
 
-Runs Codex for selected PMIDs and writes notes.
+Runs agentic AI for selected PMIDs and writes notes.
 
-### 25_merge_codex_curator_assist.py
+### 25_merge_agentic_ai_curator_assist.py
 
-Combines Codex notes into one workbook.
+Combines agentic AI notes into one workbook.
 
-Codex output is assistive only.
+agentic AI output is assistive only.
 
 ## Output management
 

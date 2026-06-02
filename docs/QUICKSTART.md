@@ -24,7 +24,7 @@ The repo does not track raw data files, PDFs, or generated outputs.
 
 Place the master workbook here:
 
-    data/rna_seq_metadata_v1_2026-05-05.xlsx
+    data/rna_seq_metadata_2026-05-05_original.xlsx
 
 This file is required.
 
@@ -146,19 +146,19 @@ Special single-cell collapsed workbook:
 
     PMID_30320226_single_cell_collapsed_review.xlsx
 
-## 11. Optional Codex assist
+## 11. Optional agentic AI assist
 
-Codex is optional.
+agentic AI is optional.
 
 Run selected PMIDs:
 
-    ./scripts/24_run_codex_curator_assist_selected.sh "31737630,32552779"
+    ./scripts/24_run_agentic_ai_curator_assist_selected.sh "31737630,32552779"
 
-Merge Codex notes:
+Merge agentic AI notes:
 
-    python scripts/25_merge_codex_curator_assist.py
+    python scripts/25_merge_agentic_ai_curator_assist.py
 
-Codex notes are assistive only. Human curators make final decisions.
+agentic AI notes are assistive only. Human curators make final decisions.
 
 ## 12. Final master creation
 

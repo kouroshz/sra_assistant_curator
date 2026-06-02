@@ -10,7 +10,7 @@ The endpoint is a rowwise curator-approved master-like table, but curator review
 
 Required local files, not tracked by Git:
 
-- data/rna_seq_metadata_v1_2026-05-05.xlsx
+- data/rna_seq_metadata_2026-05-05_original.xlsx
 - papers/*.pdf
 
 Tracked config files:

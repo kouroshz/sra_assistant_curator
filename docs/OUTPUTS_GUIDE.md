@@ -26,7 +26,7 @@ This is the current rowwise draft populated table.
 
 ### 02_QC_SUMMARIES
 
-Run status, PDF status, PMID lists, Codex coverage, and organization plans.
+Run status, PDF status, PMID lists, agentic AI coverage, and organization plans.
 
 ### 03_PER_PMID_INTERMEDIATES
 
@@ -34,11 +34,11 @@ Per-PMID audit/debug files.
 
 Use this if one PMID needs investigation.
 
-### 04_CODEX_ASSIST
+### 04_AGENTIC_AI_ASSIST
 
-Optional Codex notes, prompts, and logs.
+Optional agentic AI notes, prompts, and logs.
 
-Codex notes are assistive only.
+agentic AI notes are assistive only.
 
 ### 05_LOGS
 
