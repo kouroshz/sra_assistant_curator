@@ -193,9 +193,20 @@ def classify_assay(row: pd.Series, g: pd.DataFrame) -> dict:
     n_ctrl = int(pd.to_numeric(row.get("n_rows_with_control_evidence", 0), errors="coerce") or 0)
     n_need = int(pd.to_numeric(row.get("n_rows_needing_ai", 0), errors="coerce") or 0)
 
-    if has_chip_strategy or chip_hits >= 5:
+    # LibraryStrategy is the strongest packet-level assay evidence.
+    # Paper text may mention ChIP/CUT&RUN even when this BioProject packet contains RNA-seq only.
+    if has_rna_strategy and not has_chip_strategy:
+        if perturb_hits > 0 or n_pert > 0 or n_ctrl > 0:
+            assay_class = "rna_seq_contrast_or_perturbation"
+        else:
+            assay_class = "rna_seq_expression_or_timecourse"
+    elif has_chip_strategy and not has_rna_strategy:
         assay_class = "chip_like_target_enrichment"
-    elif has_rna_strategy or rna_hits > 0:
+    elif has_chip_strategy and has_rna_strategy:
+        assay_class = "mixed_or_ambiguous"
+    elif chip_hits >= 5 and not has_rna_strategy:
+        assay_class = "chip_like_target_enrichment"
+    elif rna_hits > 0:
         if perturb_hits > 0 or n_pert > 0 or n_ctrl > 0:
             assay_class = "rna_seq_contrast_or_perturbation"
         else:
