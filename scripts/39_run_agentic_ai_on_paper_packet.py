@@ -259,7 +259,13 @@ Strict policies:
 - If evidence is missing or conflicting, say unknown and flag it.
 - AI outputs are suggestions only.
 - Human curators make final decisions.
-- For RNA-seq perturbation/KD/drug studies, identify matched WT/untreated/vehicle/comparator groups for DEG readiness.
+- The rowwise evidence table is the source of truth for Run/source_row_id/sample-label mapping.
+- Every source_row_id in the rowwise evidence table must appear exactly once in rowwise_suggestions.
+- Do not create sample_map classes that are only conceptual contrasts. sample_map entries must correspond to real row groups. Put conceptual contrasts in analysis_readiness or global_warnings.
+- Do not override explicit sample labels. If a row says nodrug/no-drug/control/ctrl, do not label it DHA/BTZ/drug-treated.
+- If a row says DHA, label treatment as DHA. If it says BTZ/bortezomib, label treatment as BTZ.
+- If row evidence and paper interpretation conflict, preserve row evidence and flag the conflict.
+- For RNA-seq perturbation/KD/drug studies, identify matched WT/untreated/vehicle/no-drug comparator groups for DEG readiness.
 - For RNA-seq expression/time-course studies, expression-only WT data can be useful if stage/strain/sample meaning is clear.
 - For ChIP/CUT&RUN/CUT&Tag-like data, target and matched background/control are analysis-critical.
 - If ChIP-like samples lack input/IgG/untagged/matched background, mark peak_calling_not_ready or partial.
