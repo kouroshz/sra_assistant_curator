@@ -52,8 +52,8 @@ OUTPUT_SCHEMA = {
         {
             "sample_class_id": "short stable label",
             "sample_class_description": "string",
-            "matched_source_row_ids": ["source_row_id values, or representative subset if too many"],
-            "matched_run_ids": ["Run IDs, or representative subset if too many"],
+            "matched_source_row_ids": ["ALL source_row_id values belonging to this real sample class; each source_row_id must appear in exactly one sample_map entry"],
+            "matched_run_ids": ["ALL Run IDs belonging to this real sample class; must correspond to matched_source_row_ids"],
             "n_rows_matched": "integer",
             "assay_type": "string",
             "strain": "string or unknown",
@@ -261,7 +261,13 @@ Strict policies:
 - Human curators make final decisions.
 - The rowwise evidence table is the source of truth for Run/source_row_id/sample-label mapping.
 - Every source_row_id in the rowwise evidence table must appear exactly once in rowwise_suggestions.
-- Do not create sample_map classes that are only conceptual contrasts. sample_map entries must correspond to real row groups. Put conceptual contrasts in analysis_readiness or global_warnings.
+- sample_map must be a PARTITION of the rowwise evidence table into mutually exclusive real biological sample classes.
+- Every source_row_id in the rowwise evidence table must appear exactly once across all sample_map.matched_source_row_ids.
+- Never put the same source_row_id in more than one sample_map entry.
+- Do not omit uncertain rows from sample_map. If necessary, create an unknown_or_ambiguous real sample class and flag it.
+- Do not create sample_map classes that are only conceptual contrasts, comparison groups, or analytic contexts. sample_map entries must correspond to real row groups.
+- A control sample may be used as comparator for multiple contrasts, but it still appears only once in sample_map. Put contrast/comparator reuse in rowwise_suggestions, analysis_readiness, or global_warnings.
+- Do not duplicate rows in sample_map to represent perturbation-vs-control, stage comparisons, replicate logic, or multiple downstream analyses.
 - Do not override explicit sample labels. If a row says nodrug/no-drug/control/ctrl, do not label it DHA/BTZ/drug-treated.
 - If a row says DHA, label treatment as DHA. If it says BTZ/bortezomib, label treatment as BTZ.
 - If row evidence and paper interpretation conflict, preserve row evidence and flag the conflict.
@@ -273,6 +279,13 @@ Strict policies:
 
 Assay-aware queue context:
 {json.dumps(queue_context, indent=2)}
+
+Before returning JSON, internally check these structural invariants:
+1. len(rowwise_suggestions) must equal n_rows_total from the rowwise evidence table.
+2. The set of rowwise_suggestions.source_row_id must equal the source_row_id column exactly.
+3. The union of sample_map.matched_source_row_ids must equal the source_row_id column exactly.
+4. No source_row_id may appear more than once across sample_map.matched_source_row_ids.
+5. sample_map is for real biological sample classes only; contrasts/comparisons are not sample classes.
 
 Expected output JSON schema:
 {json.dumps(OUTPUT_SCHEMA, indent=2)}
