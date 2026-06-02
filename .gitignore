@@ -53,3 +53,4 @@ papers/**
 
 # Old scratch/prototype scripts are not part of human-facing pipeline
 scripts/prototype_old/
+.env.local
