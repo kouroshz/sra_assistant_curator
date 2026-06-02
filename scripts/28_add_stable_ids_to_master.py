@@ -26,6 +26,8 @@ DEFAULT_INPUT = Path("data/rna_seq_metadata_2026-05-05_original.xlsx")
 DEFAULT_OUT_TSV = Path("outputs/01_CURRENT_DRAFT_TABLES/rowwise_master_with_stable_ids.tsv")
 DEFAULT_GROUP_MAP = Path("outputs/02_QC_SUMMARIES/curation_group_id_map.tsv")
 DEFAULT_SUMMARY = Path("outputs/02_QC_SUMMARIES/stable_id_summary.tsv")
+DEFAULT_EXCLUDED = Path("outputs/02_QC_SUMMARIES/excluded_special_case_rows.tsv")
+DEFAULT_EXCLUDE_PMIDS = ["30320226"]
 
 
 # These columns define preliminary biological/sample-level grouping.
@@ -87,6 +89,13 @@ def main() -> None:
     parser.add_argument("--out-tsv", type=Path, default=DEFAULT_OUT_TSV)
     parser.add_argument("--group-map", type=Path, default=DEFAULT_GROUP_MAP)
     parser.add_argument("--summary", type=Path, default=DEFAULT_SUMMARY)
+    parser.add_argument("--excluded-rows", type=Path, default=DEFAULT_EXCLUDED)
+    parser.add_argument(
+        "--exclude-pmids",
+        nargs="*",
+        default=DEFAULT_EXCLUDE_PMIDS,
+        help="PMIDs to exclude from normal rowwise/group-level curator workflow.",
+    )
     args = parser.parse_args()
 
     if not args.input.exists():
@@ -95,6 +104,7 @@ def main() -> None:
     args.out_tsv.parent.mkdir(parents=True, exist_ok=True)
     args.group_map.parent.mkdir(parents=True, exist_ok=True)
     args.summary.parent.mkdir(parents=True, exist_ok=True)
+    args.excluded_rows.parent.mkdir(parents=True, exist_ok=True)
 
     df = pd.read_excel(args.input, sheet_name=args.sheet, dtype=object)
 
@@ -104,6 +114,22 @@ def main() -> None:
 
     # Preserve Excel row number. Header is row 1, first data row is row 2.
     df.insert(0, "source_row_number", range(2, len(df) + 2))
+
+    n_rows_before_exclusion = len(df)
+
+    # Exclude special cases from the normal curator workflow.
+    # These are not deleted from the source workbook; they are simply routed out.
+    excluded_df = pd.DataFrame()
+    if "PMID" in df.columns and args.exclude_pmids:
+        exclude_set = {str(x).strip() for x in args.exclude_pmids}
+        pmid_as_str = df["PMID"].astype(str).str.strip()
+        excluded_df = df[pmid_as_str.isin(exclude_set)].copy()
+        df = df[~pmid_as_str.isin(exclude_set)].copy()
+
+    if not excluded_df.empty:
+        excluded_df.to_csv(args.excluded_rows, sep="\t", index=False)
+    else:
+        pd.DataFrame(columns=df.columns).to_csv(args.excluded_rows, sep="\t", index=False)
 
     source_cols = existing_columns(df, SOURCE_FINGERPRINT_COLUMNS)
     if not source_cols:
@@ -169,6 +195,10 @@ def main() -> None:
     summary = pd.DataFrame(
         [
             {"metric": "input_workbook", "value": str(args.input)},
+            {"metric": "n_rows_before_exclusion", "value": n_rows_before_exclusion},
+            {"metric": "excluded_pmids", "value": ",".join(args.exclude_pmids)},
+            {"metric": "n_excluded_rows", "value": len(excluded_df)},
+            {"metric": "excluded_rows_file", "value": str(args.excluded_rows)},
             {"metric": "n_rows", "value": rows},
             {"metric": "n_unique_source_row_id", "value": n_source_ids},
             {"metric": "n_curation_groups", "value": n_groups},
