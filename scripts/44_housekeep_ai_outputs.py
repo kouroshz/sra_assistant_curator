@@ -89,6 +89,12 @@ def classify_file(path: Path) -> str:
     if ".ai_curation_semantic_stage_corrected." in name:
         return "semantic_stage_corrected_ai_json"
 
+    if ".ai_curation_samplemap_biokey_rebuilt." in name:
+        return "samplemap_biokey_rebuilt_ai_json"
+
+    if ".ai_curation_samplemap_rebuilt." in name:
+        return "samplemap_rebuilt_ai_json"
+
     if ".ai_curation_samplemap_completed." in name:
         return "samplemap_completed_ai_json"
 
@@ -218,6 +224,8 @@ def build_manifest() -> pd.DataFrame:
             "one_shot_ai_json",
             "chunked_merged_incomplete_or_superseded_ai_json",
             "samplemap_completed_ai_json",
+            "samplemap_rebuilt_ai_json",
+            "samplemap_biokey_rebuilt_ai_json",
             "semantic_stage_corrected_ai_json",
             "chunked_merged_completed_ai_json",
         }:

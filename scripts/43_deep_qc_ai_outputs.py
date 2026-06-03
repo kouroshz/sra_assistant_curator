@@ -112,6 +112,10 @@ def classify_ai_json(path: Path) -> str:
         return "chunk_intermediate"
     if "semantic_stage_corrected" in name:
         return "semantic_stage_corrected"
+    if "samplemap_biokey_rebuilt" in name:
+        return "samplemap_biokey_rebuilt"
+    if "samplemap_rebuilt" in name:
+        return "samplemap_rebuilt"
     if "samplemap_completed" in name:
         return "samplemap_completed"
     if "chunked_merged_completed" in name:

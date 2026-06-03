@@ -107,7 +107,7 @@ def ai_text(row: pd.Series) -> str:
 
 def stage_tokens_from_text(text: str) -> set[str]:
     token_patterns = {
-        "ring": r"\bring\b",
+        "ring": r"\brings?\b",
         "trophozoite": r"\btroph|trophozoite\b",
         "schizont": r"\bschi|schizont\b",
         "gametocyte": r"\bgametocyte\b",
@@ -202,6 +202,9 @@ def scan_row(row: pd.Series) -> list[dict]:
         # If both have a clear stage and there is no overlap, flag.
         if row_stage.isdisjoint(ai_stage):
             add_flag(flags, "MEDIUM", "possible_stage_mismatch",
+                     f"row_stage={sorted(row_stage)} ai_stage={sorted(ai_stage)}")
+        elif len(row_stage) > 1:
+            add_flag(flags, "REVIEW", "metadata_stage_conflict_ai_matches_one_source",
                      f"row_stage={sorted(row_stage)} ai_stage={sorted(ai_stage)}")
     elif row_stage and clean(row.get("suggested_stage_timepoint", "")).lower() in {"unknown", ""}:
         add_flag(flags, "REVIEW", "stage_in_metadata_but_ai_unknown",
