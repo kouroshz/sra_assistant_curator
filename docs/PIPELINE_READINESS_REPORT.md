@@ -1,13 +1,13 @@
 # Pipeline Readiness Report
 
-Generated: 2026-06-04T18:14:05
+Generated: 2026-06-04T19:25:12
 
 This report summarizes whether the current production-reorg branch is ready for controlled use and further refactoring.
 
 ## Git state
 
 - branch: `production-reorg`
-- latest commit: `092b3ed Add command utilities and refactor readiness report generator`
+- latest commit: `d05c3e1 Refresh script cleanup plan after final classification`
 - working tree: clean
 
 ## Required tracked files
@@ -66,7 +66,7 @@ Test output excerpt:
     test_workflow_runner_dry_run_default (__main__.TestGoldenOutputs.test_workflow_runner_dry_run_default) ... ok
     
     ----------------------------------------------------------------------
-    Ran 7 tests in 0.195s
+    Ran 7 tests in 0.213s
     
     OK
 
@@ -79,7 +79,7 @@ Test output excerpt:
 
 - PASS latest release pointer exists: `results/LATEST_FINAL_CURATOR_RELEASE.txt`
   - `results/final_curator_release`
-  - `results/final_curator_release_20260604_181405.zip`
+  - `results/final_curator_release_20260604_192512.zip`
 
 ## Remaining technical debt
 
