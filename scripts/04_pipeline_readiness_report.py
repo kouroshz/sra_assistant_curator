@@ -13,11 +13,17 @@ This script:
 
 from pathlib import Path
 from datetime import datetime
-import subprocess
 import sys
 
 
-ROOT = Path(".")
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from sra_paper_curator.command_utils import run_command
+
+
 REPORT = Path("docs/PIPELINE_READINESS_REPORT.md")
 
 
@@ -39,24 +45,6 @@ REQUIRED_SCRIPTS = [
 ]
 
 
-def run_cmd(cmd, allow_fail=False):
-    p = subprocess.run(
-        cmd,
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    if p.returncode != 0 and not allow_fail:
-        raise RuntimeError(
-            "Command failed:\n"
-            + " ".join(cmd)
-            + "\n\nOutput:\n"
-            + p.stdout
-        )
-    return p.returncode, p.stdout.strip()
-
-
 def pass_fail(ok):
     return "PASS" if ok else "FAIL"
 
@@ -64,6 +52,11 @@ def pass_fail(ok):
 def file_exists_nonempty(path):
     p = Path(path)
     return p.exists() and p.is_file() and p.stat().st_size > 0
+
+
+def append_excerpt(lines, text, n=20):
+    for line in text.splitlines()[-n:]:
+        lines.append(f"    {line}")
 
 
 def main():
@@ -77,10 +70,9 @@ def main():
     lines.append("This report summarizes whether the current production-reorg branch is ready for controlled use and further refactoring.")
     lines.append("")
 
-    # Git state
-    _, branch = run_cmd(["git", "branch", "--show-current"], allow_fail=True)
-    _, commit = run_cmd(["git", "log", "-1", "--oneline"], allow_fail=True)
-    _, status = run_cmd(["git", "status", "--short"], allow_fail=True)
+    branch = run_command(["git", "branch", "--show-current"], cwd=ROOT, allow_fail=True).stdout
+    commit = run_command(["git", "log", "-1", "--oneline"], cwd=ROOT, allow_fail=True).stdout
+    status = run_command(["git", "status", "--short"], cwd=ROOT, allow_fail=True).stdout
 
     lines.append("## Git state")
     lines.append("")
@@ -98,7 +90,6 @@ def main():
         lines.append("- working tree: clean")
     lines.append("")
 
-    # Required files
     lines.append("## Required tracked files")
     lines.append("")
     for path in REQUIRED_DOCS + REQUIRED_SCRIPTS:
@@ -108,11 +99,10 @@ def main():
             problems.append(f"Missing or empty required file: {path}")
     lines.append("")
 
-    # Final release QC
     lines.append("## Final release QC")
     lines.append("")
-    qc_code, qc_out = run_cmd([sys.executable, "scripts/03_qc_final_release.py"], allow_fail=True)
-    if qc_code == 0:
+    qc = run_command([sys.executable, "scripts/03_qc_final_release.py"], cwd=ROOT, allow_fail=True)
+    if qc.returncode == 0:
         lines.append("- PASS `scripts/03_qc_final_release.py`")
     else:
         lines.append("- FAIL `scripts/03_qc_final_release.py`")
@@ -120,15 +110,13 @@ def main():
     lines.append("")
     lines.append("Final release QC output excerpt:")
     lines.append("")
-    for line in qc_out.splitlines()[-20:]:
-        lines.append(f"    {line}")
+    append_excerpt(lines, qc.stdout)
     lines.append("")
 
-    # Golden tests
     lines.append("## Golden-output regression tests")
     lines.append("")
-    test_code, test_out = run_cmd([sys.executable, "tests/test_golden_outputs.py"], allow_fail=True)
-    if test_code == 0:
+    tests = run_command([sys.executable, "tests/test_golden_outputs.py"], cwd=ROOT, allow_fail=True)
+    if tests.returncode == 0:
         lines.append("- PASS `tests/test_golden_outputs.py`")
     else:
         lines.append("- FAIL `tests/test_golden_outputs.py`")
@@ -136,29 +124,26 @@ def main():
     lines.append("")
     lines.append("Test output excerpt:")
     lines.append("")
-    for line in test_out.splitlines()[-20:]:
-        lines.append(f"    {line}")
+    append_excerpt(lines, tests.stdout)
     lines.append("")
 
-    # Workflow wrapper safety
     lines.append("## Workflow wrapper safety")
     lines.append("")
 
-    dry_code, dry_out = run_cmd([sys.executable, "workflows/run_workflow_step.py", "--step", "90"], allow_fail=True)
-    dry_ok = dry_code == 0 and "DRY-RUN only" in dry_out
+    dry = run_command([sys.executable, "workflows/run_workflow_step.py", "--step", "90"], cwd=ROOT, allow_fail=True)
+    dry_ok = dry.returncode == 0 and "DRY-RUN only" in dry.stdout
     lines.append(f"- {pass_fail(dry_ok)} non-AI step defaults to dry-run")
     if not dry_ok:
         problems.append("Workflow step 90 did not default to dry-run.")
 
-    ai_code, ai_out = run_cmd([sys.executable, "workflows/run_workflow_step.py", "--step", "33", "--execute"], allow_fail=True)
-    ai_ok = ai_code != 0 and "Refusing to execute AI-capable step" in ai_out
+    ai = run_command([sys.executable, "workflows/run_workflow_step.py", "--step", "33", "--execute"], cwd=ROOT, allow_fail=True)
+    ai_ok = ai.returncode != 0 and "Refusing to execute AI-capable step" in ai.stdout
     lines.append(f"- {pass_fail(ai_ok)} AI-capable step refuses execution without --execute-ai")
     if not ai_ok:
         problems.append("AI-capable workflow step did not refuse unsafe execution.")
 
     lines.append("")
 
-    # Final release presence
     lines.append("## Clean final release")
     lines.append("")
     release_pointer = Path("results/LATEST_FINAL_CURATOR_RELEASE.txt")
@@ -172,14 +157,13 @@ def main():
         problems.append("Latest final release pointer is missing.")
     lines.append("")
 
-    # Technical debt
     lines.append("## Remaining technical debt")
     lines.append("")
     lines.append("The current pipeline is usable and protected by regression checks, but it is not fully publication-quality yet.")
     lines.append("")
     lines.append("Remaining cleanup:")
     lines.append("")
-    lines.append("1. Move shared helpers into `src/sra_paper_curator/`.")
+    lines.append("1. Move more shared helpers into `src/sra_paper_curator/`.")
     lines.append("2. Replace legacy numbered scripts with stable workflow names.")
     lines.append("3. Move superseded scripts into `legacy_scripts/` only after parity checks pass.")
     lines.append("4. Add developer-facing documentation for publication resolution, AI prompt contracts, validation, and repairs.")
@@ -187,7 +171,6 @@ def main():
     lines.append("6. Add CI or a single reproducibility command for local validation.")
     lines.append("")
 
-    # Verdict
     lines.append("## Final verdict")
     lines.append("")
     if problems:
