@@ -1,6 +1,6 @@
 # Unmapped Script Review
 
-Generated: 2026-06-04T18:30:19
+Generated: 2026-06-04T18:31:35
 
 This is a non-destructive classification of scripts not currently in `workflows/steps.tsv` and not production infrastructure.
 
@@ -8,11 +8,10 @@ Do not move these automatically. Use this report to decide what should be archiv
 
 ## Summary
 
-- KEEP_REVIEW_STRONG_CODE_REFERENCE: 11
-- MANUAL_REVIEW: 14
+- KEEP_REVIEW_STRONG_CODE_REFERENCE: 9
 - POSSIBLE_AI_UTILITY_REVIEW: 1
-- POSSIBLE_PAPER_PUBLICATION_UTILITY_REVIEW: 8
-- POSSIBLE_QC_UTILITY_REVIEW: 3
+- POSSIBLE_PAPER_PUBLICATION_UTILITY_REVIEW: 1
+- POSSIBLE_QC_UTILITY_REVIEW: 2
 
 ## Categories
 
@@ -26,12 +25,6 @@ Do not move these automatically. Use this report to decide what should be archiv
 
 ## KEEP_REVIEW_STRONG_CODE_REFERENCE
 
-- `scripts/07_extract_paper_context.py`
-  - recommendation: Referenced by non-legacy tracked files; do not move without manual inspection.
-  - strong references: 1
-  - strongly referenced by: scripts/10_make_llm_packet.py
-  - weak legacy/doc references: 3
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md | scripts/run_curator_pipeline.py
 - `scripts/29_make_group_level_curator_review.py`
   - recommendation: Referenced by non-legacy tracked files; do not move without manual inspection.
   - strong references: 1
@@ -83,81 +76,6 @@ Do not move these automatically. Use this report to decide what should be archiv
   - strong references: 2
   - strongly referenced by: docs/POSTDOC_RERUN_RUNBOOK.md | scripts/00_audit_current_pipeline_for_reorg.py
   - weak legacy/doc references: 0
-- `scripts/run_curator_pipeline.py`
-  - recommendation: Referenced by non-legacy tracked files; do not move without manual inspection.
-  - strong references: 2
-  - strongly referenced by: scripts/07_classify_unmapped_scripts.py | scripts/16_run_batch_curator_pipeline.py
-  - weak legacy/doc references: 0
-
-## MANUAL_REVIEW
-
-- `scripts/02_fetch_sra_runinfo_for_master_rows.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 3
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md | scripts/run_curator_pipeline.py
-- `scripts/03_fetch_biosample_metadata_for_master_rows.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 3
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md | scripts/run_curator_pipeline.py
-- `scripts/04_populate_master_from_biosample.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 3
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md | scripts/run_curator_pipeline.py
-- `scripts/09_make_curator_review_view.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 3
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md | scripts/run_curator_pipeline.py
-- `scripts/10_make_llm_packet.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 0
-- `scripts/11_llm_curator_assist.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 0
-- `scripts/12_add_llm_to_curator_review.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 0
-- `scripts/13_add_control_group_columns.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 1
-  - weakly referenced by: scripts/run_curator_pipeline.py
-- `scripts/14_add_curator_condition_fields.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 3
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md | scripts/run_curator_pipeline.py
-- `scripts/16_run_batch_curator_pipeline.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 5
-  - weakly referenced by: docs/LEGACY_README_BEFORE_PRODUCTION_REORG.md | docs/PIPELINE_OVERVIEW.md | docs/QUICKSTART.md | docs/WORKFLOW.md | scripts/README.md
-- `scripts/18_make_curator_review_index.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 2
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md
-- `scripts/19_make_group_level_curator_index.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 5
-  - weakly referenced by: docs/LEGACY_README_BEFORE_PRODUCTION_REORG.md | docs/PIPELINE_OVERVIEW.md | docs/QUICKSTART.md | docs/WORKFLOW.md | scripts/README.md
-- `scripts/26_freeze_current_outputs.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 5
-  - weakly referenced by: docs/LEGACY_README_BEFORE_PRODUCTION_REORG.md | docs/PIPELINE_OVERVIEW.md | docs/QUICKSTART.md | docs/WORKFLOW.md | scripts/README.md
-- `scripts/27_organize_outputs.py`
-  - recommendation: No clear classification; inspect manually.
-  - strong references: 0
-  - weak legacy/doc references: 5
-  - weakly referenced by: docs/LEGACY_README_BEFORE_PRODUCTION_REORG.md | docs/PIPELINE_OVERVIEW.md | docs/QUICKSTART.md | docs/WORKFLOW.md | scripts/README.md
 
 ## POSSIBLE_AI_UTILITY_REVIEW
 
@@ -169,41 +87,6 @@ Do not move these automatically. Use this report to decide what should be archiv
 
 ## POSSIBLE_PAPER_PUBLICATION_UTILITY_REVIEW
 
-- `scripts/01_filter_master_by_pmid.py`
-  - recommendation: Looks related to paper/PDF/PMID/publication logic; inspect before moving.
-  - strong references: 0
-  - weak legacy/doc references: 3
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md | scripts/run_curator_pipeline.py
-- `scripts/06_list_pmid_candidates.py`
-  - recommendation: Looks related to paper/PDF/PMID/publication logic; inspect before moving.
-  - strong references: 0
-  - weak legacy/doc references: 5
-  - weakly referenced by: docs/LEGACY_README_BEFORE_PRODUCTION_REORG.md | docs/PIPELINE_OVERVIEW.md | docs/QUICKSTART.md | docs/WORKFLOW.md | scripts/README.md
-- `scripts/08_apply_paper_context_to_master.py`
-  - recommendation: Looks related to paper/PDF/PMID/publication logic; inspect before moving.
-  - strong references: 0
-  - weak legacy/doc references: 3
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md | scripts/run_curator_pipeline.py
-- `scripts/17_apply_special_pmid_handling.py`
-  - recommendation: Looks related to paper/PDF/PMID/publication logic; inspect before moving.
-  - strong references: 0
-  - weak legacy/doc references: 3
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md | scripts/run_curator_pipeline.py
-- `scripts/21_patch_pmid_31737630_dis3.py`
-  - recommendation: Looks related to paper/PDF/PMID/publication logic; inspect before moving.
-  - strong references: 0
-  - weak legacy/doc references: 3
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md | scripts/run_curator_pipeline.py
-- `scripts/22_patch_pmid_34365503_timepoints.py`
-  - recommendation: Looks related to paper/PDF/PMID/publication logic; inspect before moving.
-  - strong references: 0
-  - weak legacy/doc references: 3
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md | scripts/run_curator_pipeline.py
-- `scripts/23_patch_pmid_32552779_arp4_glcn.py`
-  - recommendation: Looks related to paper/PDF/PMID/publication logic; inspect before moving.
-  - strong references: 0
-  - weak legacy/doc references: 3
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md | scripts/run_curator_pipeline.py
 - `scripts/36_rank_paper_packets_for_ai.py`
   - recommendation: Looks related to paper/PDF/PMID/publication logic; inspect before moving.
   - strong references: 0
@@ -212,11 +95,6 @@ Do not move these automatically. Use this report to decide what should be archiv
 
 ## POSSIBLE_QC_UTILITY_REVIEW
 
-- `scripts/20_make_spotcheck_workbook.py`
-  - recommendation: Looks like QC/validation/inventory logic; inspect before moving.
-  - strong references: 0
-  - weak legacy/doc references: 2
-  - weakly referenced by: docs/PIPELINE_OVERVIEW.md | scripts/README.md
 - `scripts/43b_semantic_spotcheck_pass_packets.py`
   - recommendation: Looks like QC/validation/inventory logic; inspect before moving.
   - strong references: 0

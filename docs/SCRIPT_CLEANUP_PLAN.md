@@ -1,6 +1,6 @@
 # Script Cleanup Plan
 
-Generated: 2026-06-04T18:30:18
+Generated: 2026-06-04T18:31:35
 
 This is a non-destructive cleanup inventory.
 
@@ -10,7 +10,7 @@ Do not move active workflow scripts yet.
 
 - ACTIVE_WORKFLOW: 41
 - PRODUCTION_INFRA: 8
-- UNMAPPED_REVIEW: 37
+- UNMAPPED_REVIEW: 13
 
 ## Cleanup policy
 
@@ -178,52 +178,6 @@ Do not move active workflow scripts yet.
 
 ### UNMAPPED_REVIEW
 
-- `scripts/01_filter_master_by_pmid.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/02_fetch_sra_runinfo_for_master_rows.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/03_fetch_biosample_metadata_for_master_rows.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/04_populate_master_from_biosample.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/06_list_pmid_candidates.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/07_extract_paper_context.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/08_apply_paper_context_to_master.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/09_make_curator_review_view.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/10_make_llm_packet.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/11_llm_curator_assist.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/12_add_llm_to_curator_review.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/13_add_control_group_columns.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/14_add_curator_condition_fields.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/16_run_batch_curator_pipeline.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/17_apply_special_pmid_handling.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/18_make_curator_review_index.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/19_make_group_level_curator_index.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/20_make_spotcheck_workbook.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/21_patch_pmid_31737630_dis3.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/22_patch_pmid_34365503_timepoints.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/23_patch_pmid_32552779_arp4_glcn.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/26_freeze_current_outputs.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/27_organize_outputs.py`
-  - Not in active workflow map; review before moving/deleting
 - `scripts/29_make_group_level_curator_review.py`
   - Not in active workflow map; review before moving/deleting
   - doc: Create a group-level curator review workbook from the stable-ID rowwise table.  This script does NOT call AI and does NOT modify the master sheet. It prepares a human/agent-ready curator table.  Input:   outputs/01_CURRENT_DRAFT_TABLES/rowwise_master_with_stable_ids.tsv  Outputs:   outputs/00_FINAL_
@@ -259,6 +213,4 @@ Do not move active workflow scripts yet.
 - `scripts/65_audit_chip_repeats_and_chunk_failures.py`
   - Not in active workflow map; review before moving/deleting
 - `scripts/69_postdoc_handoff_inventory.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/run_curator_pipeline.py`
   - Not in active workflow map; review before moving/deleting
