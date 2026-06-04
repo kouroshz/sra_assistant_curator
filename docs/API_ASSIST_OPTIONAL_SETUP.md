@@ -27,7 +27,7 @@ The `.env` file is ignored by Git and should never be committed.
 
 ## Test API access
 
-    python scripts/31_test_openai_api.py
+    python legacy_scripts/review_archive/early_agentic_prototypes/31_test_openai_api.py
 
 Expected output:
 

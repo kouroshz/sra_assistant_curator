@@ -70,7 +70,7 @@ Stable-ID summary:
 
 Script added:
 
-- scripts/29_make_group_level_curator_review.py
+- legacy_scripts/review_archive/early_agentic_prototypes/29_make_group_level_curator_review.py
 
 This creates a group-level review workbook with stable IDs.
 
@@ -80,7 +80,7 @@ Current interpretation: this table is useful as a scaffold and batching/QC objec
 
 Script added:
 
-- scripts/30_make_agentic_ai_input_packets.py
+- legacy_scripts/review_archive/early_agentic_prototypes/30_make_agentic_ai_input_packets.py
 
 This created initial group-level JSON packets for future AI curation.
 
@@ -96,8 +96,8 @@ Current interpretation: useful early scaffold, but the better direction is paper
 
 Scripts/docs added:
 
-- scripts/31_test_openai_api.py
-- scripts/32_run_agentic_ai_on_packet.py
+- legacy_scripts/review_archive/early_agentic_prototypes/31_test_openai_api.py
+- legacy_scripts/review_archive/early_agentic_prototypes/32_run_agentic_ai_on_packet.py
 - docs/API_ASSIST_OPTIONAL_SETUP.md
 - requirements-ai.txt
 - .env.example

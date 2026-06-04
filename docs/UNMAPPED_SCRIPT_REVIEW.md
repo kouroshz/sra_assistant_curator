@@ -1,6 +1,6 @@
 # Unmapped Script Review
 
-Generated: 2026-06-04T19:19:07
+Generated: 2026-06-04T19:21:34
 
 This is a non-destructive classification of scripts not currently in `workflows/steps.tsv` and not production infrastructure.
 
@@ -9,7 +9,6 @@ Do not move these automatically. Use this report to decide what should be archiv
 ## Summary
 
 - ACTIVE_DEPENDENCY_KEEP: 3
-- KEEP_REVIEW_STRONG_CODE_REFERENCE: 4
 - SUPPORT_UTILITY_KEEP_REVIEW: 2
 
 ## Categories
@@ -44,32 +43,6 @@ Do not move these automatically. Use this report to decide what should be archiv
   - strongly referenced by: docs/TRUSTED_RNA_AI_PHASE_COMPLETION_REPORT.md | scripts/07_classify_unmapped_scripts.py | scripts/49_finalize_trusted_rna_ai_phase.py
   - weak legacy/doc references: 0
   - doc: Auto-dispatch batch runner for trusted RNA AI packets.  Small/moderate packets:   -> scripts/41_batch_run_agentic_ai_on_trusted_queue.py  Large packets:   -> scripts/41c_run_agentic_ai_chunked_large_packet.py  This keeps the original one-shot batch runner stable, while using chunked mode when row count is too large for reliable one-shot JSON output.
-
-## KEEP_REVIEW_STRONG_CODE_REFERENCE
-
-- `scripts/29_make_group_level_curator_review.py`
-  - recommendation: Referenced by non-legacy tracked files; do not move without manual inspection.
-  - strong references: 1
-  - strongly referenced by: docs/CURRENT_PIPELINE_STATUS_AND_STRATEGY.md
-  - weak legacy/doc references: 0
-  - doc: Create a group-level curator review workbook from the stable-ID rowwise table.  This script does NOT call AI and does NOT modify the master sheet. It prepares a human/agent-ready curator table.  Input:   outputs/01_CURRENT_DRAFT_TABLES/rowwise_master_with_stable_ids.tsv  Outputs:   outputs/00_FINAL_CURATOR_PACKAGE/curator_group_level_review_WITH_STABLE_IDS.xlsx   outputs/01_CURRENT_DRAFT_TABLES/curator_group_level_review_WITH_STABLE_IDS.tsv   outputs/02_QC_SUMMARIES/group_level_curator_review_su
-- `scripts/30_make_agentic_ai_input_packets.py`
-  - recommendation: Referenced by non-legacy tracked files; do not move without manual inspection.
-  - strong references: 1
-  - strongly referenced by: docs/CURRENT_PIPELINE_STATUS_AND_STRATEGY.md
-  - weak legacy/doc references: 0
-  - doc: Create compact input packets for the future API-based agentic AI curator.  This script does NOT call an API. This script does NOT modify metadata. This script only prepares per-curation-group JSON packets that contain:   - stable IDs   - current parsed metadata   - run/BioSample identifiers   - compact row examples   - paper PDF candidates   - explicit AI output schema  Later, an API-based paper-reading assistant can use these packets to populate ai_* suggestion fields and reduce human curator b
-- `scripts/31_test_openai_api.py`
-  - recommendation: Referenced by non-legacy tracked files; do not move without manual inspection.
-  - strong references: 2
-  - strongly referenced by: docs/API_ASSIST_OPTIONAL_SETUP.md | docs/CURRENT_PIPELINE_STATUS_AND_STRATEGY.md
-  - weak legacy/doc references: 0
-- `scripts/32_run_agentic_ai_on_packet.py`
-  - recommendation: Referenced by non-legacy tracked files; do not move without manual inspection.
-  - strong references: 1
-  - strongly referenced by: docs/CURRENT_PIPELINE_STATUS_AND_STRATEGY.md
-  - weak legacy/doc references: 0
-  - doc: Run the optional API-based agentic curator on ONE input packet.  This is intentionally single-packet only for pilot testing.  Safety:   - API disabled by default unless AGENTIC_AI_ENABLE_API=1   - does not modify master workbook   - does not modify group-level curator table   - writes suggestions only to outputs/04_AGENTIC_AI_ASSIST/
 
 ## SUPPORT_UTILITY_KEEP_REVIEW
 

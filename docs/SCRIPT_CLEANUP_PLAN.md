@@ -1,6 +1,6 @@
 # Script Cleanup Plan
 
-Generated: 2026-06-04T19:19:07
+Generated: 2026-06-04T19:21:34
 
 This is a non-destructive cleanup inventory.
 
@@ -10,7 +10,7 @@ Do not move active workflow scripts yet.
 
 - ACTIVE_WORKFLOW: 41
 - PRODUCTION_INFRA: 8
-- UNMAPPED_REVIEW: 9
+- UNMAPPED_REVIEW: 5
 
 ## Cleanup policy
 
@@ -178,17 +178,6 @@ Do not move active workflow scripts yet.
 
 ### UNMAPPED_REVIEW
 
-- `scripts/29_make_group_level_curator_review.py`
-  - Not in active workflow map; review before moving/deleting
-  - doc: Create a group-level curator review workbook from the stable-ID rowwise table.  This script does NOT call AI and does NOT modify the master sheet. It prepares a human/agent-ready curator table.  Input:   outputs/01_CURRENT_DRAFT_TABLES/rowwise_master_with_stable_ids.tsv  Outputs:   outputs/00_FINAL_
-- `scripts/30_make_agentic_ai_input_packets.py`
-  - Not in active workflow map; review before moving/deleting
-  - doc: Create compact input packets for the future API-based agentic AI curator.  This script does NOT call an API. This script does NOT modify metadata. This script only prepares per-curation-group JSON packets that contain:   - stable IDs   - current parsed metadata   - run/BioSample identifiers   - comp
-- `scripts/31_test_openai_api.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/32_run_agentic_ai_on_packet.py`
-  - Not in active workflow map; review before moving/deleting
-  - doc: Run the optional API-based agentic curator on ONE input packet.  This is intentionally single-packet only for pilot testing.  Safety:   - API disabled by default unless AGENTIC_AI_ENABLE_API=1   - does not modify master workbook   - does not modify group-level curator table   - writes suggestions on
 - `scripts/41_batch_run_agentic_ai_on_trusted_queue.py`
   - Not in active workflow map; review before moving/deleting
   - doc: Batch runner for trusted PMID-linked RNA-seq paper/BioProject packets.  Default behavior is DRY-RUN ONLY. Use --execute to call the API runner.  This script intentionally does NOT read any manual/gold-standard curation files. Gold standards should be used only later for independent verification.  Ty
