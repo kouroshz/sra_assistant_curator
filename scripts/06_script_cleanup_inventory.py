@@ -29,6 +29,7 @@ PRODUCTION_INFRA = {
     "scripts/04_pipeline_readiness_report.py",
     "scripts/05_run_all_checks.py",
     "scripts/06_script_cleanup_inventory.py",
+    "scripts/07_classify_unmapped_scripts.py",
 }
 
 

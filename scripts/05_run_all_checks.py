@@ -35,6 +35,8 @@ PYTHON_FILES_TO_COMPILE = [
     "scripts/03_qc_final_release.py",
     "scripts/04_pipeline_readiness_report.py",
     "scripts/05_run_all_checks.py",
+    "scripts/06_script_cleanup_inventory.py",
+    "scripts/07_classify_unmapped_scripts.py",
     "workflows/run_workflow_step.py",
     "tests/test_golden_outputs.py",
 ]

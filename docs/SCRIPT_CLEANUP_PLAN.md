@@ -1,6 +1,6 @@
 # Script Cleanup Plan
 
-Generated: 2026-06-04T18:29:26
+Generated: 2026-06-04T18:30:18
 
 This is a non-destructive cleanup inventory.
 
@@ -9,8 +9,8 @@ Do not move active workflow scripts yet.
 ## Summary
 
 - ACTIVE_WORKFLOW: 41
-- PRODUCTION_INFRA: 7
-- UNMAPPED_REVIEW: 38
+- PRODUCTION_INFRA: 8
+- UNMAPPED_REVIEW: 37
 
 ## Cleanup policy
 
@@ -169,6 +169,9 @@ Do not move active workflow scripts yet.
 - `scripts/06_script_cleanup_inventory.py`
   - Production wrapper/QC/reorg infrastructure
   - doc: Create a script cleanup inventory before moving legacy files.  Non-destructive: - reads scripts/*.py - reads workflows/steps.tsv - classifies scripts as active workflow, production infrastructure, superseded candidate, or unmapped review - writes docs/SCRIPT_CLEANUP_INVENTORY.tsv - writes docs/SCRIP
+- `scripts/07_classify_unmapped_scripts.py`
+  - Production wrapper/QC/reorg infrastructure
+  - doc: Classify unmapped scripts before legacy cleanup.  Non-destructive: - reads docs/SCRIPT_CLEANUP_INVENTORY.tsv - examines scripts marked UNMAPPED_REVIEW - checks whether they are referenced by active/production scripts - assigns a tentative review category - writes docs/UNMAPPED_SCRIPT_REVIEW.tsv - wr
 
 ### SUPERSEDED_CANDIDATE
 
@@ -185,9 +188,6 @@ Do not move active workflow scripts yet.
   - Not in active workflow map; review before moving/deleting
 - `scripts/06_list_pmid_candidates.py`
   - Not in active workflow map; review before moving/deleting
-- `scripts/07_classify_unmapped_scripts.py`
-  - Not in active workflow map; review before moving/deleting
-  - doc: Classify unmapped scripts before legacy cleanup.  Non-destructive: - reads docs/SCRIPT_CLEANUP_INVENTORY.tsv - examines scripts marked UNMAPPED_REVIEW - checks whether they are referenced by active/production scripts - assigns a tentative review category - writes docs/UNMAPPED_SCRIPT_REVIEW.tsv - wr
 - `scripts/07_extract_paper_context.py`
   - Not in active workflow map; review before moving/deleting
 - `scripts/08_apply_paper_context_to_master.py`

@@ -1,6 +1,6 @@
 # Unmapped Script Review
 
-Generated: 2026-06-04T18:29:27
+Generated: 2026-06-04T18:30:19
 
 This is a non-destructive classification of scripts not currently in `workflows/steps.tsv` and not production infrastructure.
 
@@ -12,7 +12,7 @@ Do not move these automatically. Use this report to decide what should be archiv
 - MANUAL_REVIEW: 14
 - POSSIBLE_AI_UTILITY_REVIEW: 1
 - POSSIBLE_PAPER_PUBLICATION_UTILITY_REVIEW: 8
-- POSSIBLE_QC_UTILITY_REVIEW: 4
+- POSSIBLE_QC_UTILITY_REVIEW: 3
 
 ## Categories
 
@@ -212,11 +212,6 @@ Do not move these automatically. Use this report to decide what should be archiv
 
 ## POSSIBLE_QC_UTILITY_REVIEW
 
-- `scripts/07_classify_unmapped_scripts.py`
-  - recommendation: Looks like QC/validation/inventory logic; inspect before moving.
-  - strong references: 0
-  - weak legacy/doc references: 0
-  - doc: Classify unmapped scripts before legacy cleanup.  Non-destructive: - reads docs/SCRIPT_CLEANUP_INVENTORY.tsv - examines scripts marked UNMAPPED_REVIEW - checks whether they are referenced by active/production scripts - assigns a tentative review category - writes docs/UNMAPPED_SCRIPT_REVIEW.tsv - writes docs/UNMAPPED_SCRIPT_REVIEW.md  No files are moved. No APIs are called.
 - `scripts/20_make_spotcheck_workbook.py`
   - recommendation: Looks like QC/validation/inventory logic; inspect before moving.
   - strong references: 0
