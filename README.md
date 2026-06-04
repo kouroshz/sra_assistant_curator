@@ -215,3 +215,17 @@ The AI can summarize papers and suggest sample labels, but deterministic validat
 - repairs write audit trails
 
 Final biological correctness still requires curator review.
+
+## Fresh clone versus artifact-backed checks
+
+A fresh Git clone does not contain generated `outputs/` or `results/` artifacts.
+
+For a fresh clone smoke check, run:
+
+    python scripts/05_run_all_checks.py
+
+This verifies the code, workflow wrapper, and AI safety guard.
+
+For the full artifact-backed production check on a machine that already has generated outputs, run:
+
+    python scripts/05_run_all_checks.py --with-artifacts

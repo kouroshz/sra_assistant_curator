@@ -1,36 +1,40 @@
 #!/usr/bin/env python3
 """
-Run the production sanity-check suite.
+Run production sanity checks.
 
-This is the one-command local validation entry point.
+Default behavior:
+- In a fresh clone without generated outputs, runs repo smoke checks only.
+- In a local working tree with generated outputs, also runs artifact-backed release checks.
 
-It does not call APIs.
-It does not require OpenAI keys.
-It only regenerates ignored release artifacts under results/.
-It does not modify tracked documentation.
+Use:
+    python scripts/05_run_all_checks.py
+    python scripts/05_run_all_checks.py --repo-only
+    python scripts/05_run_all_checks.py --with-artifacts
 
-Checks:
-- production Python files compile
-- clean final release can be rebuilt
-- final release QC passes
-- golden-output regression tests pass
-- workflow wrapper defaults to dry-run
-- AI-capable workflow step refuses unsafe execution
+No API calls.
+No OpenAI key required.
 """
 
 from pathlib import Path
+import argparse
 import os
 import subprocess
 import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from sra_paper_curator.artifact_checks import missing_release_sources
 
 
 PYTHON_FILES_TO_COMPILE = [
     "src/sra_paper_curator/__init__.py",
     "src/sra_paper_curator/file_utils.py",
     "src/sra_paper_curator/command_utils.py",
+    "src/sra_paper_curator/artifact_checks.py",
     "scripts/02_create_clean_final_release.py",
     "scripts/03_qc_final_release.py",
     "scripts/04_pipeline_readiness_report.py",
@@ -69,14 +73,25 @@ def run(cmd, *, expect_ok=True, env=None):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--repo-only",
+        action="store_true",
+        help="Run only checks that should pass in a fresh clone without generated outputs.",
+    )
+    parser.add_argument(
+        "--with-artifacts",
+        action="store_true",
+        help="Require local generated outputs and run release/golden-output checks.",
+    )
+    args = parser.parse_args()
+
+    if args.repo_only and args.with_artifacts:
+        raise SystemExit("Use only one of --repo-only or --with-artifacts.")
+
     print("# Running SRA curator production checks")
 
-    compile_cmd = [sys.executable, "-m", "py_compile"] + PYTHON_FILES_TO_COMPILE
-    run(compile_cmd)
-
-    run([sys.executable, "scripts/02_create_clean_final_release.py"])
-    run([sys.executable, "scripts/03_qc_final_release.py"])
-    run([sys.executable, "tests/test_golden_outputs.py"])
+    run([sys.executable, "-m", "py_compile"] + PYTHON_FILES_TO_COMPILE)
 
     dry = run([sys.executable, "workflows/run_workflow_step.py", "--step", "90"])
     if "DRY-RUN only" not in dry.stdout:
@@ -90,12 +105,36 @@ def main():
     if unsafe_ai.returncode == 0 or "Refusing to execute AI-capable step" not in unsafe_ai.stdout:
         raise SystemExit("FAILED: AI step did not refuse unsafe execution")
 
+    missing = missing_release_sources(ROOT)
+    have_artifacts = len(missing) == 0
+
+    if args.with_artifacts and not have_artifacts:
+        print("")
+        print("FAILED: --with-artifacts was requested, but generated release source artifacts are missing.")
+        print("")
+        for item in missing:
+            print("  - " + item)
+        raise SystemExit(1)
+
+    if args.repo_only or not have_artifacts:
+        print("")
+        print("SKIP: artifact-backed release checks were not run.")
+        print("Reason: generated outputs are not present in this checkout.")
+        print("")
+        print("This is expected in a fresh Git clone because outputs/results are ignored.")
+        print("To run full artifact-backed checks on the production machine, use:")
+        print("")
+        print("  python scripts/05_run_all_checks.py --with-artifacts")
+        print("")
+        print("PASS: repo smoke checks passed.")
+        return
+
+    run([sys.executable, "scripts/02_create_clean_final_release.py"])
+    run([sys.executable, "scripts/03_qc_final_release.py"])
+    run([sys.executable, "tests/test_golden_outputs.py"])
+
     print("")
     print("PASS: all production checks passed.")
-    print("")
-    print("Useful follow-up:")
-    print("  python scripts/04_pipeline_readiness_report.py")
-    print("  cat docs/PIPELINE_READINESS_REPORT.md")
 
 
 if __name__ == "__main__":

@@ -1,14 +1,22 @@
 # Pipeline Readiness Report
 
-Generated: 2026-06-04T19:25:12
+Generated: 2026-06-04T19:37:09
 
-This report summarizes whether the current production-reorg branch is ready for controlled use and further refactoring.
+This report summarizes whether the current branch is ready for controlled use and further refactoring.
 
 ## Git state
 
 - branch: `production-reorg`
-- latest commit: `d05c3e1 Refresh script cleanup plan after final classification`
-- working tree: clean
+- latest commit: `0732a52 Refresh pipeline readiness report for v1.0 cleanup`
+- working tree: DIRTY
+
+Uncommitted changes:
+
+- `M README.md`
+- ` M docs/DEVELOPER_GUIDE.md`
+- ` M scripts/04_pipeline_readiness_report.py`
+- ` M scripts/05_run_all_checks.py`
+- `?? src/sra_paper_curator/artifact_checks.py`
 
 ## Required tracked files
 
@@ -23,6 +31,10 @@ This report summarizes whether the current production-reorg branch is ready for 
 - PASS `workflows/steps.tsv`
 - PASS `configs/default.yaml`
 - PASS `tests/test_golden_outputs.py`
+
+## Local generated artifact availability
+
+- PASS generated release source artifacts are available.
 
 ## Final release QC
 
@@ -66,7 +78,7 @@ Test output excerpt:
     test_workflow_runner_dry_run_default (__main__.TestGoldenOutputs.test_workflow_runner_dry_run_default) ... ok
     
     ----------------------------------------------------------------------
-    Ran 7 tests in 0.213s
+    Ran 7 tests in 0.197s
     
     OK
 
@@ -79,25 +91,22 @@ Test output excerpt:
 
 - PASS latest release pointer exists: `results/LATEST_FINAL_CURATOR_RELEASE.txt`
   - `results/final_curator_release`
-  - `results/final_curator_release_20260604_192512.zip`
+  - `results/final_curator_release_20260604_193709.zip`
 
 ## Remaining technical debt
 
-The current pipeline is usable and protected by regression checks, but it is not fully publication-quality yet.
+The current pipeline is usable and protected by regression checks, but further end-to-end rerun testing is still needed.
 
 Remaining cleanup:
 
 1. Move more shared helpers into `src/sra_paper_curator/`.
 2. Replace legacy numbered scripts with stable workflow names.
-3. Move superseded scripts into `legacy_scripts/` only after parity checks pass.
-4. Add developer-facing documentation for publication resolution, AI prompt contracts, validation, and repairs.
-5. Add smaller unit tests for validators and ChIP target-control logic.
-6. Add CI or a single reproducibility command for local validation.
+3. Add developer-facing documentation for publication resolution, AI prompt contracts, validation, and repairs.
+4. Add smaller unit tests for validators and ChIP target-control logic.
+5. Run controlled end-to-end rerun tests from raw/local inputs.
 
 ## Final verdict
 
-PASS
+FAIL / REVIEW
 
-The current production-reorg branch has a clean final release, passing release QC, passing golden-output tests, and safe default behavior for AI-capable steps.
-
-It is ready for controlled internal use and for the next refactoring phase.
+- Working tree has uncommitted changes.
