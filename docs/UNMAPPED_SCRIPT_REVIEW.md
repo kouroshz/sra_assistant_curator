@@ -1,6 +1,6 @@
 # Unmapped Script Review
 
-Generated: 2026-06-04T18:28:07
+Generated: 2026-06-04T18:29:27
 
 This is a non-destructive classification of scripts not currently in `workflows/steps.tsv` and not production infrastructure.
 
@@ -8,12 +8,11 @@ Do not move these automatically. Use this report to decide what should be archiv
 
 ## Summary
 
-- HISTORICAL_ARCHIVE_CANDIDATE: 3
 - KEEP_REVIEW_STRONG_CODE_REFERENCE: 11
 - MANUAL_REVIEW: 14
 - POSSIBLE_AI_UTILITY_REVIEW: 1
 - POSSIBLE_PAPER_PUBLICATION_UTILITY_REVIEW: 8
-- POSSIBLE_QC_UTILITY_REVIEW: 3
+- POSSIBLE_QC_UTILITY_REVIEW: 4
 
 ## Categories
 
@@ -24,23 +23,6 @@ Do not move these automatically. Use this report to decide what should be archiv
 - POSSIBLE_PAPER_PUBLICATION_UTILITY_REVIEW: may contain paper/PMID/PDF logic.
 - POSSIBLE_AI_UTILITY_REVIEW: may contain AI prompt/run logic.
 - MANUAL_REVIEW: unclear.
-
-## HISTORICAL_ARCHIVE_CANDIDATE
-
-- `scripts/05_evaluate_against_gold_standard.py`
-  - recommendation: Looks historical/prototype/pilot/versioned; candidate for archive after review.
-  - strong references: 0
-  - weak legacy/doc references: 0
-- `scripts/41b_compare_ai_to_manual_gold_pilot.py`
-  - recommendation: Looks historical/prototype/pilot/versioned; candidate for archive after review.
-  - strong references: 0
-  - weak legacy/doc references: 0
-  - doc: Independent gold-standard overlap check for one AI curation pilot.  This script is intentionally POST HOC. It must NOT be called by the AI runner and must NOT be used for training/prompt fitting. It compares an already-produced AI curation JSON against a manual curated workbook, limited to overlapping Run IDs only.  Designed first for:   PMID_32487761__BIOPROJECT_PRJNA550429  Outputs:   outputs/04_AGENTIC_AI_ASSIST/gold_standard_verification/<packet_id>/     <packet_id>.gold_overlap_comparison.<
-- `scripts/44_housekeep_ai_outputs.py`
-  - recommendation: Looks historical/prototype/pilot/versioned; candidate for archive after review.
-  - strong references: 0
-  - weak legacy/doc references: 0
-  - doc: Housekeeping planner for AI curation outputs.  Default is DRY-RUN:   - builds a manifest of active vs superseded/intermediate files   - proposes archive moves   - does NOT move or delete anything  With --execute:   - moves proposed archive files into:       outputs/04_AGENTIC_AI_ASSIST/_archive_superseded_ai_outputs/<timestamp>/   - preserves relative paths   - writes the same manifest  It never deletes files.
 
 ## KEEP_REVIEW_STRONG_CODE_REFERENCE
 
@@ -230,6 +212,11 @@ Do not move these automatically. Use this report to decide what should be archiv
 
 ## POSSIBLE_QC_UTILITY_REVIEW
 
+- `scripts/07_classify_unmapped_scripts.py`
+  - recommendation: Looks like QC/validation/inventory logic; inspect before moving.
+  - strong references: 0
+  - weak legacy/doc references: 0
+  - doc: Classify unmapped scripts before legacy cleanup.  Non-destructive: - reads docs/SCRIPT_CLEANUP_INVENTORY.tsv - examines scripts marked UNMAPPED_REVIEW - checks whether they are referenced by active/production scripts - assigns a tentative review category - writes docs/UNMAPPED_SCRIPT_REVIEW.tsv - writes docs/UNMAPPED_SCRIPT_REVIEW.md  No files are moved. No APIs are called.
 - `scripts/20_make_spotcheck_workbook.py`
   - recommendation: Looks like QC/validation/inventory logic; inspect before moving.
   - strong references: 0

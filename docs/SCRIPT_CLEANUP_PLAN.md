@@ -1,6 +1,6 @@
 # Script Cleanup Plan
 
-Generated: 2026-06-04T18:22:13
+Generated: 2026-06-04T18:29:26
 
 This is a non-destructive cleanup inventory.
 
@@ -10,7 +10,7 @@ Do not move active workflow scripts yet.
 
 - ACTIVE_WORKFLOW: 41
 - PRODUCTION_INFRA: 7
-- UNMAPPED_REVIEW: 40
+- UNMAPPED_REVIEW: 38
 
 ## Cleanup policy
 
@@ -183,10 +183,11 @@ Do not move active workflow scripts yet.
   - Not in active workflow map; review before moving/deleting
 - `scripts/04_populate_master_from_biosample.py`
   - Not in active workflow map; review before moving/deleting
-- `scripts/05_evaluate_against_gold_standard.py`
-  - Not in active workflow map; review before moving/deleting
 - `scripts/06_list_pmid_candidates.py`
   - Not in active workflow map; review before moving/deleting
+- `scripts/07_classify_unmapped_scripts.py`
+  - Not in active workflow map; review before moving/deleting
+  - doc: Classify unmapped scripts before legacy cleanup.  Non-destructive: - reads docs/SCRIPT_CLEANUP_INVENTORY.tsv - examines scripts marked UNMAPPED_REVIEW - checks whether they are referenced by active/production scripts - assigns a tentative review category - writes docs/UNMAPPED_SCRIPT_REVIEW.tsv - wr
 - `scripts/07_extract_paper_context.py`
   - Not in active workflow map; review before moving/deleting
 - `scripts/08_apply_paper_context_to_master.py`
@@ -240,9 +241,6 @@ Do not move active workflow scripts yet.
 - `scripts/41_batch_run_agentic_ai_on_trusted_queue.py`
   - Not in active workflow map; review before moving/deleting
   - doc: Batch runner for trusted PMID-linked RNA-seq paper/BioProject packets.  Default behavior is DRY-RUN ONLY. Use --execute to call the API runner.  This script intentionally does NOT read any manual/gold-standard curation files. Gold standards should be used only later for independent verification.  Ty
-- `scripts/41b_compare_ai_to_manual_gold_pilot.py`
-  - Not in active workflow map; review before moving/deleting
-  - doc: Independent gold-standard overlap check for one AI curation pilot.  This script is intentionally POST HOC. It must NOT be called by the AI runner and must NOT be used for training/prompt fitting. It compares an already-produced AI curation JSON against a manual curated workbook, limited to overlappi
 - `scripts/41c_run_agentic_ai_chunked_large_packet.py`
   - Not in active workflow map; review before moving/deleting
   - doc: Chunked AI runner for large paper packets.  Design:   - Run script 39 on rowwise chunks.   - Collect only valid rowwise_suggestions.   - Ignore AI sample_map for final merged large-packet output.   - Build sample_map deterministically from merged rowwise_suggestions.   - If AI misses rows, add deter
@@ -252,9 +250,6 @@ Do not move active workflow scripts yet.
 - `scripts/43b_semantic_spotcheck_pass_packets.py`
   - Not in active workflow map; review before moving/deleting
   - doc: Semantic spot-check table for PASS AI-curated packets.  Read-only. Does not modify outputs.  Creates:   outputs/04_AGENTIC_AI_ASSIST/deep_qc/semantic_spotcheck_rows.tsv   outputs/04_AGENTIC_AI_ASSIST/deep_qc/SEMANTIC_SPOTCHECK_SUMMARY.md
-- `scripts/44_housekeep_ai_outputs.py`
-  - Not in active workflow map; review before moving/deleting
-  - doc: Housekeeping planner for AI curation outputs.  Default is DRY-RUN:   - builds a manifest of active vs superseded/intermediate files   - proposes archive moves   - does NOT move or delete anything  With --execute:   - moves proposed archive files into:       outputs/04_AGENTIC_AI_ASSIST/_archive_supe
 - `scripts/45_find_rna_chip_overlap_bioqc_candidates.py`
   - Not in active workflow map; review before moving/deleting
   - doc: Find candidate papers/BioProjects for biological QC across RNA and ChIP master sheets.  Read-only.  Outputs:   outputs/05_BIOLOGICAL_QC/rna_chip_overlap_candidates.tsv
