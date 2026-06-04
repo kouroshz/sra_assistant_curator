@@ -7,7 +7,7 @@ The app should be a human-facing interface over the group-level curator table.
 The app should read:
 
 - curator_group_level_review_index_FOR_REVIEW.xlsx
-- selected_codex_curator_assist_summary.xlsx, optional
+- selected_agentic_ai_curator_assist_summary.xlsx, optional
 - paper/context snippets if available, optional
 
 ## Key field
@@ -41,7 +41,7 @@ For each group:
 - assigned controls
 - curator_condition_note
 - review_reason
-- Codex notes if available
+- agentic AI notes if available
 
 ## What curators submit
 

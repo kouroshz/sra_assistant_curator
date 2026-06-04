@@ -11,7 +11,7 @@ DATA = ROOT / "data"
 OUT = ROOT / "outputs"
 CACHE = DATA / "biosample_cache"
 
-MASTER = DATA / "rna_seq_metadata_v1_2026-05-05.xlsx"
+MASTER = DATA / "rna_seq_metadata_2026-05-05_original.xlsx"
 
 
 EXTRA_COLUMNS = [

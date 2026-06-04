@@ -14,7 +14,7 @@ These are safe to keep in Git:
 
 Place the master workbook here:
 
-    data/rna_seq_metadata_v1_2026-05-05.xlsx
+    data/rna_seq_metadata_2026-05-05_original.xlsx
 
 This file is not tracked by Git.
 

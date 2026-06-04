@@ -26,10 +26,10 @@ Scripts are numbered roughly by pipeline order.
 - 22_patch_pmid_34365503_timepoints.py
 - 23_patch_pmid_32552779_arp4_glcn.py
 
-## Optional Codex assist
+## Legacy Codex assist
 
-- 24_run_codex_curator_assist_selected.sh
-- 25_merge_codex_curator_assist.py
+- legacy/24_run_codex_curator_assist_selected.sh
+- legacy/25_merge_codex_curator_assist.py
 
 ## Output organization
 

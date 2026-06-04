@@ -1,0 +1,232 @@
+#!/usr/bin/env python3
+"""
+Generate a publication-readiness report for the curator pipeline.
+
+Fresh clone behavior:
+- code/wrapper/AI-safety smoke checks should pass
+- artifact-backed release checks are skipped if generated outputs are absent
+
+Artifact-backed behavior:
+- when generated outputs are present, final release QC and golden-output tests are also run
+"""
+
+from pathlib import Path
+from datetime import datetime
+import sys
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from sra_paper_curator.command_utils import run_command
+from sra_paper_curator.artifact_checks import missing_release_sources
+
+
+REPORT = Path("docs/PIPELINE_READINESS_REPORT.md")
+
+
+REQUIRED_DOCS = [
+    "README.md",
+    "docs/ACTIVE_WORKFLOW_MAP.md",
+    "docs/PRODUCTION_REORG_PLAN.md",
+    "docs/GOLDEN_OUTPUTS.md",
+]
+
+REQUIRED_SCRIPTS = [
+    "scripts/02_create_clean_final_release.py",
+    "scripts/03_qc_final_release.py",
+    "scripts/04_pipeline_readiness_report.py",
+    "workflows/run_workflow_step.py",
+    "workflows/steps.tsv",
+    "configs/default.yaml",
+    "tests/test_golden_outputs.py",
+]
+
+
+def pass_fail(ok):
+    return "PASS" if ok else "FAIL"
+
+
+def file_exists_nonempty(path):
+    p = Path(path)
+    return p.exists() and p.is_file() and p.stat().st_size > 0
+
+
+def append_excerpt(lines, text, n=20):
+    for line in text.splitlines()[-n:]:
+        lines.append(f"    {line}")
+
+
+def main():
+    lines = []
+    problems = []
+
+    lines.append("# Pipeline Readiness Report")
+    lines.append("")
+    lines.append(f"Generated: {datetime.now().isoformat(timespec='seconds')}")
+    lines.append("")
+    lines.append("This report summarizes whether the current branch is ready for controlled use and further refactoring.")
+    lines.append("")
+
+    branch = run_command(["git", "branch", "--show-current"], cwd=ROOT, allow_fail=True).stdout
+    commit = run_command(["git", "log", "-1", "--oneline"], cwd=ROOT, allow_fail=True).stdout
+    status = run_command(["git", "status", "--short"], cwd=ROOT, allow_fail=True).stdout
+
+    lines.append("## Git state")
+    lines.append("")
+    lines.append(f"- branch: `{branch}`")
+    lines.append(f"- latest commit: `{commit}`")
+    if status:
+        lines.append("- working tree: DIRTY")
+        lines.append("")
+        lines.append("Uncommitted changes:")
+        lines.append("")
+        for s in status.splitlines():
+            lines.append(f"- `{s}`")
+        problems.append("Working tree has uncommitted changes.")
+    else:
+        lines.append("- working tree: clean")
+    lines.append("")
+
+    lines.append("## Required tracked files")
+    lines.append("")
+    for path in REQUIRED_DOCS + REQUIRED_SCRIPTS:
+        ok = file_exists_nonempty(path)
+        lines.append(f"- {pass_fail(ok)} `{path}`")
+        if not ok:
+            problems.append(f"Missing or empty required file: {path}")
+    lines.append("")
+
+    missing_artifacts = missing_release_sources(ROOT)
+    have_artifacts = len(missing_artifacts) == 0
+
+    lines.append("## Local generated artifact availability")
+    lines.append("")
+    if have_artifacts:
+        lines.append("- PASS generated release source artifacts are available.")
+    else:
+        lines.append("- SKIP artifact-backed checks: generated release source artifacts are not present.")
+        lines.append("")
+        lines.append("This is expected in a fresh Git clone because `outputs/` and `results/` are generated/ignored.")
+        lines.append("")
+        lines.append("Missing artifact sources include:")
+        lines.append("")
+        for item in missing_artifacts:
+            lines.append(f"- `{item}`")
+    lines.append("")
+
+    lines.append("## Final release QC")
+    lines.append("")
+    if have_artifacts:
+        qc = run_command([sys.executable, "scripts/03_qc_final_release.py"], cwd=ROOT, allow_fail=True)
+        if qc.returncode == 0:
+            lines.append("- PASS `scripts/03_qc_final_release.py`")
+        else:
+            lines.append("- FAIL `scripts/03_qc_final_release.py`")
+            problems.append("Final release QC failed.")
+        lines.append("")
+        lines.append("Final release QC output excerpt:")
+        lines.append("")
+        append_excerpt(lines, qc.stdout)
+    else:
+        lines.append("- SKIP final release QC because generated artifacts are not present.")
+        lines.append("")
+        lines.append("Run on a machine with generated outputs:")
+        lines.append("")
+        lines.append("    python scripts/05_run_all_checks.py --with-artifacts")
+    lines.append("")
+
+    lines.append("## Golden-output regression tests")
+    lines.append("")
+    if have_artifacts:
+        tests = run_command([sys.executable, "tests/test_golden_outputs.py"], cwd=ROOT, allow_fail=True)
+        if tests.returncode == 0:
+            lines.append("- PASS `tests/test_golden_outputs.py`")
+        else:
+            lines.append("- FAIL `tests/test_golden_outputs.py`")
+            problems.append("Golden-output tests failed.")
+        lines.append("")
+        lines.append("Test output excerpt:")
+        lines.append("")
+        append_excerpt(lines, tests.stdout)
+    else:
+        lines.append("- SKIP golden-output tests because generated artifacts are not present.")
+    lines.append("")
+
+    lines.append("## Workflow wrapper safety")
+    lines.append("")
+
+    dry = run_command([sys.executable, "workflows/run_workflow_step.py", "--step", "90"], cwd=ROOT, allow_fail=True)
+    dry_ok = dry.returncode == 0 and "DRY-RUN only" in dry.stdout
+    lines.append(f"- {pass_fail(dry_ok)} non-AI step defaults to dry-run")
+    if not dry_ok:
+        problems.append("Workflow step 90 did not default to dry-run.")
+
+    ai = run_command([sys.executable, "workflows/run_workflow_step.py", "--step", "33", "--execute"], cwd=ROOT, allow_fail=True)
+    ai_ok = ai.returncode != 0 and "Refusing to execute AI-capable step" in ai.stdout
+    lines.append(f"- {pass_fail(ai_ok)} AI-capable step refuses execution without --execute-ai")
+    if not ai_ok:
+        problems.append("AI-capable workflow step did not refuse unsafe execution.")
+
+    lines.append("")
+
+    lines.append("## Clean final release")
+    lines.append("")
+    release_pointer = Path("results/LATEST_FINAL_CURATOR_RELEASE.txt")
+    if release_pointer.exists():
+        pointer_lines = release_pointer.read_text().strip().splitlines()
+        lines.append(f"- PASS latest release pointer exists: `{release_pointer}`")
+        for item in pointer_lines:
+            lines.append(f"  - `{item}`")
+    elif have_artifacts:
+        lines.append(f"- FAIL latest release pointer missing: `{release_pointer}`")
+        problems.append("Latest final release pointer is missing.")
+    else:
+        lines.append("- SKIP latest release pointer check because generated artifacts are not present.")
+    lines.append("")
+
+    lines.append("## Remaining technical debt")
+    lines.append("")
+    lines.append("The current pipeline is usable and protected by regression checks, but further end-to-end rerun testing is still needed.")
+    lines.append("")
+    lines.append("Remaining cleanup:")
+    lines.append("")
+    lines.append("1. Move more shared helpers into `src/sra_paper_curator/`.")
+    lines.append("2. Replace legacy numbered scripts with stable workflow names.")
+    lines.append("3. Add developer-facing documentation for publication resolution, AI prompt contracts, validation, and repairs.")
+    lines.append("4. Add smaller unit tests for validators and ChIP target-control logic.")
+    lines.append("5. Run controlled end-to-end rerun tests from raw/local inputs.")
+    lines.append("")
+
+    lines.append("## Final verdict")
+    lines.append("")
+    if problems:
+        lines.append("FAIL / REVIEW")
+        lines.append("")
+        for p in problems:
+            lines.append(f"- {p}")
+    else:
+        lines.append("PASS")
+        lines.append("")
+        if have_artifacts:
+            lines.append("The current branch has a clean final release, passing release QC, passing golden-output tests, and safe default behavior for AI-capable steps.")
+        else:
+            lines.append("The current branch passes repo-level smoke checks. Artifact-backed release checks were skipped because generated outputs are not present in this checkout.")
+        lines.append("")
+        lines.append("It is ready for controlled internal use and for the next refactoring/testing phase.")
+
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    REPORT.write_text("\n".join(lines))
+
+    print(REPORT)
+    print("")
+    print("\n".join(lines))
+
+    if problems:
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

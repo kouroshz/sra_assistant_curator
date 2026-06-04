@@ -8,7 +8,7 @@ This repo is code-first. Large or copyrighted files are not stored in Git.
 
 Put here:
 
-    data/rna_seq_metadata_v1_2026-05-05.xlsx
+    data/rna_seq_metadata_2026-05-05_original.xlsx
 
 ### Paper PDFs
 

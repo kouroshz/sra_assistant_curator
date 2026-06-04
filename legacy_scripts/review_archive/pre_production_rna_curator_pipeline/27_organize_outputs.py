@@ -15,7 +15,7 @@ DESTS = {
     "final_tables": OUT / "01_CURRENT_DRAFT_TABLES",
     "qc": OUT / "02_QC_SUMMARIES",
     "per_pmid": OUT / "03_PER_PMID_INTERMEDIATES",
-    "codex": OUT / "04_CODEX_ASSIST",
+    "agentic_ai": OUT / "04_AGENTIC_AI_ASSIST",
     "logs": OUT / "05_LOGS",
     "archive": OUT / "06_ARCHIVE_OLD",
     "misc": OUT / "99_MISC_UNSORTED",
@@ -42,8 +42,8 @@ def classify(path: Path):
             return "final_package", path.name
         if name in {"batch_logs"}:
             return "logs", path.name
-        if name in {"codex_logs", "codex_prompts"}:
-            return "codex", path.name
+        if name in {"agentic_ai_logs", "agentic_ai_prompts"}:
+            return "agentic_ai", path.name
         if name.startswith("archive_"):
             return "archive", path.name
         return "misc", path.name
@@ -65,7 +65,7 @@ def classify(path: Path):
         "curator_group_level_review_index.tsv",
         "curator_review_index.xlsx",
         "curator_review_index.tsv",
-        "selected_codex_curator_assist_summary.xlsx",
+        "selected_agentic_ai_curator_assist_summary.xlsx",
     }:
         return "final_tables", name
 
@@ -79,16 +79,16 @@ def classify(path: Path):
         "pmid_candidates.tsv",
         "pmids_needing_pdfs.tsv",
         "pmids_still_needing_manual_pdf_download.tsv",
-        "codex_complete_pmids.txt",
-        "codex_missing_pmids.txt",
+        "agentic_ai_complete_pmids.txt",
+        "agentic_ai_missing_pmids.txt",
         "pmid_correction_pdf_to_download.tsv",
         "pmids_needing_manual_pdfs_after_oa_download.tsv",
     }:
         return "qc", name
 
-    # Codex assist outputs.
-    if "_codex_" in name:
-        return "codex", name
+    # agentic AI assist outputs.
+    if "_agentic_ai_" in name:
+        return "agentic_ai", name
 
     # Old API LLM files and review_with_llm are not core now.
     if "_llm_" in name or "_with_llm" in name:
@@ -211,13 +211,13 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
   Current row-level draft table and group-level review/index tables.
 
 - `02_QC_SUMMARIES/`
-  Pipeline status, PDF/download/candidate summaries, coverage reports, and complete/missing Codex PMID lists.
+  Pipeline status, PDF/download/candidate summaries, coverage reports, and complete/missing agentic AI PMID lists.
 
 - `03_PER_PMID_INTERMEDIATES/`
   Per-PMID intermediate TSV/JSON/TXT/XLSX files used for audit/debugging.
 
-- `04_CODEX_ASSIST/`
-  Codex prompts, logs, Markdown notes, and group suggestion TSVs.
+- `04_AGENTIC_AI_ASSIST/`
+  agentic AI prompts, logs, Markdown notes, and group suggestion TSVs.
 
 - `05_LOGS/`
   Batch pipeline logs.

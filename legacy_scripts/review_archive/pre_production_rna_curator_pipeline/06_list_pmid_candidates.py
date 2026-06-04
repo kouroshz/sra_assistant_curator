@@ -9,7 +9,7 @@ DATA = ROOT / "data"
 PAPERS = ROOT / "papers"
 OUT = ROOT / "outputs"
 
-MASTER = DATA / "rna_seq_metadata_v1_2026-05-05.xlsx"
+MASTER = DATA / "rna_seq_metadata_2026-05-05_original.xlsx"
 
 
 def clean(x):

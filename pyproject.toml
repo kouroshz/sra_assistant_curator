@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sra-paper-curator"
+version = "0.3.0"
+description = "Curator-assist workflow for SRA/GEO paper-linked RNA-seq and ChIP-seq metadata review."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "Kourosh Zarringhalam" }
+]
+license = { text = "Internal research prototype; license TBD" }
+
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

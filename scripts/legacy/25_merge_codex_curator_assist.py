@@ -25,13 +25,13 @@ def read_md_lines(path):
 def main():
     pmids = sorted({
         p.name.split("_")[1]
-        for p in OUT.glob("PMID_*_codex_group_suggestions.tsv")
+        for p in OUT.glob("PMID_*_agentic_ai_group_suggestions.tsv")
     })
 
     rows = []
     for pmid in pmids:
-        md = OUT / f"PMID_{pmid}_codex_curator_assist.md"
-        tsv = OUT / f"PMID_{pmid}_codex_group_suggestions.tsv"
+        md = OUT / f"PMID_{pmid}_agentic_ai_curator_assist.md"
+        tsv = OUT / f"PMID_{pmid}_agentic_ai_group_suggestions.tsv"
 
         rows.append({
             "PMID": pmid,
@@ -42,14 +42,14 @@ def main():
         })
 
     status = pd.DataFrame(rows)
-    out_xlsx = OUT / "selected_codex_curator_assist_summary.xlsx"
+    out_xlsx = OUT / "selected_agentic_ai_curator_assist_summary.xlsx"
 
     with pd.ExcelWriter(out_xlsx, engine="openpyxl") as writer:
-        status.to_excel(writer, sheet_name="Codex_Run_Status", index=False)
+        status.to_excel(writer, sheet_name="agentic AI_Run_Status", index=False)
 
         for pmid in pmids:
-            md = OUT / f"PMID_{pmid}_codex_curator_assist.md"
-            tsv = OUT / f"PMID_{pmid}_codex_group_suggestions.tsv"
+            md = OUT / f"PMID_{pmid}_agentic_ai_curator_assist.md"
+            tsv = OUT / f"PMID_{pmid}_agentic_ai_group_suggestions.tsv"
 
             read_tsv_safe(tsv).to_excel(writer, sheet_name=f"{pmid}_groups"[:31], index=False)
             read_md_lines(md).to_excel(writer, sheet_name=f"{pmid}_notes"[:31], index=False)
