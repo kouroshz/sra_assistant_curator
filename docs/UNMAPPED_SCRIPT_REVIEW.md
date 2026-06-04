@@ -1,6 +1,6 @@
 # Unmapped Script Review
 
-Generated: 2026-06-04T19:18:04
+Generated: 2026-06-04T19:19:07
 
 This is a non-destructive classification of scripts not currently in `workflows/steps.tsv` and not production infrastructure.
 
@@ -10,9 +10,6 @@ Do not move these automatically. Use this report to decide what should be archiv
 
 - ACTIVE_DEPENDENCY_KEEP: 3
 - KEEP_REVIEW_STRONG_CODE_REFERENCE: 4
-- POSSIBLE_AI_UTILITY_REVIEW: 1
-- POSSIBLE_PAPER_PUBLICATION_UTILITY_REVIEW: 1
-- POSSIBLE_QC_UTILITY_REVIEW: 2
 - SUPPORT_UTILITY_KEEP_REVIEW: 2
 
 ## Categories
@@ -73,35 +70,6 @@ Do not move these automatically. Use this report to decide what should be archiv
   - strongly referenced by: docs/CURRENT_PIPELINE_STATUS_AND_STRATEGY.md
   - weak legacy/doc references: 0
   - doc: Run the optional API-based agentic curator on ONE input packet.  This is intentionally single-packet only for pilot testing.  Safety:   - API disabled by default unless AGENTIC_AI_ENABLE_API=1   - does not modify master workbook   - does not modify group-level curator table   - writes suggestions only to outputs/04_AGENTIC_AI_ASSIST/
-
-## POSSIBLE_AI_UTILITY_REVIEW
-
-- `scripts/48b_rebuild_sample_map_from_rowwise_biokey.py`
-  - recommendation: Looks AI/prompt-related; inspect before moving.
-  - strong references: 0
-  - weak legacy/doc references: 0
-  - doc: Rebuild sample_map deterministically from rowwise_suggestions, but split heterogeneous sample_class_id groups by biological rowwise fields.  Use when:   - rowwise_suggestions cover every packet row exactly once   - sample_map has missing/duplicate source_row_id values   - sample_class_id may be too broad and span multiple stages/timepoints  Output:   <packet>.ai_curation_samplemap_biokey_rebuilt.<timestamp>.json
-
-## POSSIBLE_PAPER_PUBLICATION_UTILITY_REVIEW
-
-- `scripts/36_rank_paper_packets_for_ai.py`
-  - recommendation: Looks related to paper/PDF/PMID/publication logic; inspect before moving.
-  - strong references: 0
-  - weak legacy/doc references: 0
-  - doc: Rank paper/BioProject packets for optional agentic AI curation.  This script does NOT call an API.  It creates a priority queue that:   - prioritizes packets where paper-reading AI is likely useful   - flags well-based / single-cell uniform packets as low-value or skip   - gives human curators a ranked review list
-
-## POSSIBLE_QC_UTILITY_REVIEW
-
-- `scripts/43b_semantic_spotcheck_pass_packets.py`
-  - recommendation: Looks like QC/validation/inventory logic; inspect before moving.
-  - strong references: 0
-  - weak legacy/doc references: 0
-  - doc: Semantic spot-check table for PASS AI-curated packets.  Read-only. Does not modify outputs.  Creates:   outputs/04_AGENTIC_AI_ASSIST/deep_qc/semantic_spotcheck_rows.tsv   outputs/04_AGENTIC_AI_ASSIST/deep_qc/SEMANTIC_SPOTCHECK_SUMMARY.md
-- `scripts/45_find_rna_chip_overlap_bioqc_candidates.py`
-  - recommendation: Looks like QC/validation/inventory logic; inspect before moving.
-  - strong references: 0
-  - weak legacy/doc references: 0
-  - doc: Find candidate papers/BioProjects for biological QC across RNA and ChIP master sheets.  Read-only.  Outputs:   outputs/05_BIOLOGICAL_QC/rna_chip_overlap_candidates.tsv
 
 ## SUPPORT_UTILITY_KEEP_REVIEW
 

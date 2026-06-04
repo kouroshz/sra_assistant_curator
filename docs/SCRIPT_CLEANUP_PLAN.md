@@ -1,6 +1,6 @@
 # Script Cleanup Plan
 
-Generated: 2026-06-04T18:31:35
+Generated: 2026-06-04T19:19:07
 
 This is a non-destructive cleanup inventory.
 
@@ -10,7 +10,7 @@ Do not move active workflow scripts yet.
 
 - ACTIVE_WORKFLOW: 41
 - PRODUCTION_INFRA: 8
-- UNMAPPED_REVIEW: 13
+- UNMAPPED_REVIEW: 9
 
 ## Cleanup policy
 
@@ -189,9 +189,6 @@ Do not move active workflow scripts yet.
 - `scripts/32_run_agentic_ai_on_packet.py`
   - Not in active workflow map; review before moving/deleting
   - doc: Run the optional API-based agentic curator on ONE input packet.  This is intentionally single-packet only for pilot testing.  Safety:   - API disabled by default unless AGENTIC_AI_ENABLE_API=1   - does not modify master workbook   - does not modify group-level curator table   - writes suggestions on
-- `scripts/36_rank_paper_packets_for_ai.py`
-  - Not in active workflow map; review before moving/deleting
-  - doc: Rank paper/BioProject packets for optional agentic AI curation.  This script does NOT call an API.  It creates a priority queue that:   - prioritizes packets where paper-reading AI is likely useful   - flags well-based / single-cell uniform packets as low-value or skip   - gives human curators a ran
 - `scripts/41_batch_run_agentic_ai_on_trusted_queue.py`
   - Not in active workflow map; review before moving/deleting
   - doc: Batch runner for trusted PMID-linked RNA-seq paper/BioProject packets.  Default behavior is DRY-RUN ONLY. Use --execute to call the API runner.  This script intentionally does NOT read any manual/gold-standard curation files. Gold standards should be used only later for independent verification.  Ty
@@ -201,15 +198,6 @@ Do not move active workflow scripts yet.
 - `scripts/41d_batch_run_trusted_queue_auto_chunked.py`
   - Not in active workflow map; review before moving/deleting
   - doc: Auto-dispatch batch runner for trusted RNA AI packets.  Small/moderate packets:   -> scripts/41_batch_run_agentic_ai_on_trusted_queue.py  Large packets:   -> scripts/41c_run_agentic_ai_chunked_large_packet.py  This keeps the original one-shot batch runner stable, while using chunked mode when row co
-- `scripts/43b_semantic_spotcheck_pass_packets.py`
-  - Not in active workflow map; review before moving/deleting
-  - doc: Semantic spot-check table for PASS AI-curated packets.  Read-only. Does not modify outputs.  Creates:   outputs/04_AGENTIC_AI_ASSIST/deep_qc/semantic_spotcheck_rows.tsv   outputs/04_AGENTIC_AI_ASSIST/deep_qc/SEMANTIC_SPOTCHECK_SUMMARY.md
-- `scripts/45_find_rna_chip_overlap_bioqc_candidates.py`
-  - Not in active workflow map; review before moving/deleting
-  - doc: Find candidate papers/BioProjects for biological QC across RNA and ChIP master sheets.  Read-only.  Outputs:   outputs/05_BIOLOGICAL_QC/rna_chip_overlap_candidates.tsv
-- `scripts/48b_rebuild_sample_map_from_rowwise_biokey.py`
-  - Not in active workflow map; review before moving/deleting
-  - doc: Rebuild sample_map deterministically from rowwise_suggestions, but split heterogeneous sample_class_id groups by biological rowwise fields.  Use when:   - rowwise_suggestions cover every packet row exactly once   - sample_map has missing/duplicate source_row_id values   - sample_class_id may be too 
 - `scripts/65_audit_chip_repeats_and_chunk_failures.py`
   - Not in active workflow map; review before moving/deleting
 - `scripts/69_postdoc_handoff_inventory.py`
