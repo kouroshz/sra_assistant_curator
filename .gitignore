@@ -54,3 +54,19 @@ papers/**
 # Old scratch/prototype scripts are not part of human-facing pipeline
 scripts/prototype_old/
 .env.local
+
+# Local secrets
+.env
+*.env
+
+# Generated / bulky outputs
+outputs/
+papers/
+local_scratch/
+scripts.zip
+
+# OS/cache
+.DS_Store
+__pycache__/
+*.pyc
+*.log
