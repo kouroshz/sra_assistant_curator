@@ -10,8 +10,18 @@ It verifies that results/final_curator_release/ contains only expected curator-f
 from pathlib import Path
 from datetime import datetime
 import zipfile
-import csv
 import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from sra_paper_curator.file_utils import (
+    count_tsv_rows,
+    count_text_marker,
+    find_forbidden_files,
+)
 
 
 RELEASE_ROOT = Path("results/final_curator_release")
@@ -54,29 +64,6 @@ FORBIDDEN_NAME_PARTS = [
     "packet_json",
     "pdf",
 ]
-
-
-def count_lines(path):
-    if not path.exists():
-        return 0
-    with open(path, errors="ignore") as f:
-        return sum(1 for _ in f)
-
-
-def count_markdown_blocks(path, marker="## PMID_"):
-    if not path.exists():
-        return 0
-    text = path.read_text(errors="ignore")
-    return text.count(marker)
-
-
-def count_tsv_rows(path):
-    if not path.exists():
-        return 0
-    with open(path, newline="", errors="ignore") as f:
-        reader = csv.reader(f, delimiter="\t")
-        rows = list(reader)
-    return max(len(rows) - 1, 0)
 
 
 def file_nonempty(path):
@@ -122,16 +109,11 @@ def main():
     lines.append("## Forbidden file scan")
     lines.append("")
 
-    forbidden_hits = []
-    if RELEASE_ROOT.exists():
-        for p in RELEASE_ROOT.rglob("*"):
-            if not p.is_file():
-                continue
-            lower = p.name.lower()
-            if any(lower.endswith(s) for s in FORBIDDEN_SUFFIXES):
-                forbidden_hits.append(str(p))
-            if any(part in lower for part in FORBIDDEN_NAME_PARTS):
-                forbidden_hits.append(str(p))
+    forbidden_hits = find_forbidden_files(
+        RELEASE_ROOT,
+        FORBIDDEN_SUFFIXES,
+        FORBIDDEN_NAME_PARTS,
+    )
 
     if forbidden_hits:
         lines.append("FAIL: forbidden/suspicious files found:")
@@ -152,8 +134,8 @@ def main():
     chip_rowwise = RELEASE_ROOT / "ChIP/chip_rowwise_review.tsv"
     chip_tc = RELEASE_ROOT / "ChIP/chip_target_control_map_review.tsv"
 
-    chip_md_blocks = count_markdown_blocks(chip_md)
-    rna_md_blocks = count_markdown_blocks(rna_md)
+    chip_md_blocks = count_text_marker(chip_md, "## PMID_")
+    rna_md_blocks = count_text_marker(rna_md, "## PMID_")
     chip_tsv_rows = count_tsv_rows(chip_tsv)
     rna_tsv_rows = count_tsv_rows(rna_tsv)
     chip_rowwise_rows = count_tsv_rows(chip_rowwise)
