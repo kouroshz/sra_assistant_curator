@@ -1,200 +1,217 @@
-# SRA Assistant Curator
+# SRA Paper Curator
 
-A reproducible pipeline for converting a master RNA-seq/SRA/PubMed metadata workbook into curator-facing review tables and, after review, a rowwise curator-approved master table.
+Curator-assist pipeline for converting public SRA/GEO sequencing metadata and paper context into reviewable, analysis-ready RNA-seq and ChIP-seq curator workbooks.
 
-## Purpose
+The current use case is Plasmodium public-data curation for downstream gene-regulatory-network analysis. The pipeline helps identify paper-linked BioProjects, build paper/BioProject packets, optionally run AI-assisted paper/metadata review, validate outputs deterministically, and package curator-facing Excel/Markdown/TSV deliverables.
 
-This project helps curate SRA-linked RNA-seq metadata from papers.
+## Current status
 
-The pipeline:
+This repository currently contains a working RNA and ChIP curator-assist pipeline plus a production wrapper layer.
 
-1. reads a master metadata workbook,
-2. fetches SRA RunInfo and BioSample metadata,
-3. extracts paper/PDF context,
-4. creates a rowwise draft metadata table,
-5. collapses SRR-level rows into biological/sample-group review rows,
-6. creates a curator-facing workbook,
-7. later merges curator decisions back into a final rowwise master table.
+The working legacy scripts are still in `scripts/`.
 
-## Key idea
+The production-facing wrapper and maps are in:
 
-Curators should not edit the original master workbook directly.
+- `workflows/`
+- `configs/`
+- `docs/`
 
-Instead:
+The clean final curator-facing release is generated in:
 
-    master workbook
-        -> pipeline rowwise draft
-        -> group-level curator review workbook
-        -> curator/app decisions
-        -> final rowwise curator-approved master
+- `results/final_curator_release/`
+- `results/final_curator_release_<timestamp>.zip`
 
-## What is tracked by Git
+Generated outputs are intentionally ignored by Git.
 
-Tracked:
+## Core safety rules
 
-- scripts/
-- docs/
-- environment.yml
-- README.md
-- data/pmid_corrections.tsv
-- data/special_pmid_handling.tsv
-- data/README_DATA.md
-- papers/README_PAPERS.md
-- outputs/README_OUTPUTS.md
-- empty output-folder placeholders
+1. AI/API execution is off by default.
+2. NCBI/PubMed/SRA public metadata fetching is deterministic public-data retrieval, not AI.
+3. Deterministic validation and repair are separate from AI.
+4. AI outputs are curator aids only.
+5. Curator-final columns in Excel files are authoritative.
+6. Final release folders exclude raw PDFs, raw AI JSONs, `.env`, API keys, and bulky intermediates.
 
-Not tracked:
+## Repository layout
 
-- master Excel workbook
-- PDFs
-- SRA/BioSample caches
-- generated outputs
-- curator packages
-- agentic AI logs/notes
-- local credentials or API keys
+- `scripts/`  
+  Current working legacy scripts. These are being wrapped and gradually refactored.
 
-## Required local input files
+- `workflows/`  
+  Production-facing workflow map and safe wrapper runner.
 
-Place the master workbook here:
+- `configs/`  
+  Default configuration. AI is disabled by default.
 
-    data/rna_seq_metadata_2026-05-05_original.xlsx
+- `docs/`  
+  Workflow maps, reorganization plan, and technical documentation.
 
-Place paper PDFs here:
+- `results/final_curator_release/`  
+  Clean final curator-facing release folder generated from validated outputs.
 
-    papers/
+- `outputs/`  
+  Intermediate/generated working outputs. Ignored by Git.
 
-Recommended PDF naming:
+## Workflow concept
 
-    <PMID>_<short_title>.pdf
+The pipeline follows this logic:
 
-Example:
+1. Prepare rowwise metadata evidence.
+2. Resolve PMID/BioProject/paper links.
+3. Locate or download paper/PDF context.
+4. Build paper/BioProject packets.
+5. Optionally run AI on packet text and metadata.
+6. Validate AI output deterministically.
+7. Apply safe deterministic repairs only when row coverage is exact.
+8. Build curator-facing Excel/Markdown/TSV files.
+9. Package a clean final release.
+10. QC the release.
 
-    papers/31737630_TRIBE_Uncovers_RNA_Targets_of_Rrp6.pdf
+## What is a packet?
 
-PDFs are local-only and are not committed to Git.
+A packet is the core review unit:
 
-## Setup
+    one PMID + one BioProject
 
-Create the conda environment:
+A packet contains:
 
-    conda env create -f environment.yml
-    conda activate sra_paper_curator
+- rowwise SRA/BioSample metadata evidence
+- paper context
+- AI curation output, if AI was run
+- deterministic validation/QC results
 
-If the environment already exists:
+For RNA, the packet asks:
 
-    conda activate sra_paper_curator
+- What are the biological sample groups?
+- What are the major comparisons?
+- Is the metadata sufficient for count/DE-ready downstream analysis?
 
-## Reproduce the deterministic curator package
+For ChIP, the packet also asks:
 
-Step 1: list candidate PMIDs and check metadata/PDF status.
+- Which rows are target IP?
+- Which rows are input, IgG, mock, or background controls?
+- Which target rows map to which control rows?
+- Is the packet peak-calling ready?
 
-    python scripts/06_list_pmid_candidates.py
+## Clean final release
 
-Step 2: optional open-access PDF download.
+To create the clean final release folder:
 
-    python scripts/15_download_open_access_pdfs.py \
-      --pmids-file outputs/pmids_needing_pdfs.tsv \
-      --email YOUR_EMAIL_HERE \
-      --sleep 1.0
+    python scripts/02_create_clean_final_release.py
 
-This downloader tries open-access routes such as PubMed/PMC/Europe PMC/publisher links where available. It will not retrieve every paper. Any remaining PDFs can be downloaded manually, including through institutional access, and placed in papers/.
+To QC the final release:
 
-Step 3: run the deterministic batch pipeline.
+    python scripts/03_qc_final_release.py
 
-    python scripts/16_run_batch_curator_pipeline.py \
-      --email YOUR_EMAIL_HERE \
-      --with-paper \
-      --make-review \
-      --sort rows_asc
+Expected current release QC:
 
-Step 4: create the group-level curator review table.
+- RNA study summaries: 69
+- ChIP study summaries: 42
+- ChIP rowwise review rows: 733
+- ChIP target-control map rows: 490
+- no raw JSON/PDF/env/key-like files
+- zip opens cleanly
 
-    python scripts/19_make_group_level_curator_index.py
+The latest release pointer is:
 
-Step 5: freeze the current rowwise draft table.
+    results/LATEST_FINAL_CURATOR_RELEASE.txt
 
-    python scripts/26_freeze_current_outputs.py
+## Workflow wrapper usage
 
-Step 6: organize outputs.
+List all workflow steps:
 
-Preview first:
+    python workflows/run_workflow_step.py --list
 
-    python scripts/27_organize_outputs.py
+Show a step without running it:
 
-Apply:
+    python workflows/run_workflow_step.py --step 90
 
-    python scripts/27_organize_outputs.py --apply
+Dry-run is the default.
 
-## Main outputs
+Run a non-AI step:
 
-Curator package:
+    python workflows/run_workflow_step.py --step 90 --execute
 
-    outputs/00_FINAL_CURATOR_PACKAGE/curator_package.zip
+Run an AI-capable step only when explicitly intended:
 
-Main curator workbook:
+    AGENTIC_AI_ENABLE_API=1 python workflows/run_workflow_step.py --step 33 --execute --execute-ai
 
-    outputs/00_FINAL_CURATOR_PACKAGE/curator_package/curator_group_level_review_index_FOR_REVIEW.xlsx
+The wrapper refuses to run AI-capable steps unless both `--execute-ai` and `AGENTIC_AI_ENABLE_API=1` are present.
 
-Current rowwise draft table:
+## Important current workflow documents
 
-    outputs/01_CURRENT_DRAFT_TABLES/all_pmids_agent_filled_master_rows_with_paper_context_CURRENT.tsv
+- `docs/ACTIVE_WORKFLOW_MAP.md`  
+  Current successful RNA/ChIP script sequence, grouped by function.
 
-Special single-cell collapsed workbook:
+- `docs/PRODUCTION_REORG_PLAN.md`  
+  Reorganization plan toward publication-quality GitHub structure.
 
-    outputs/00_FINAL_CURATOR_PACKAGE/curator_package/PMID_30320226_single_cell_collapsed_review.xlsx
+- `workflows/steps.tsv`  
+  Machine-readable workflow step map.
 
-## Optional agentic AI assist
+## Curator-facing outputs
 
-agentic AI can generate conservative curator-assist notes. These are optional and not authoritative.
+Final RNA files include:
 
-Run selected PMIDs:
+- `RNA/RNA_curator_review.xlsx`
+- `RNA/RNA_AI_STUDY_SUMMARIES_CLEAN.md`
+- `RNA/rna_ai_study_summaries_clean.tsv`
 
-    ./scripts/24_run_agentic_ai_curator_assist_selected.sh "31737630,32552779"
+Final ChIP files include:
 
-Merge agentic AI notes:
+- `ChIP/ChIP_curator_review.xlsx`
+- `ChIP/CHIP_AI_STUDY_SUMMARIES_CLEAN.md`
+- `ChIP/chip_ai_study_summaries_clean.tsv`
+- `ChIP/chip_rowwise_review.tsv`
+- `ChIP/chip_target_control_map_review.tsv`
 
-    python scripts/25_merge_agentic_ai_curator_assist.py
+QC reports are in:
 
-agentic AI notes should help curators identify ambiguities, but they do not replace human review.
+- `QC/`
 
-## Output folder guide
+## ChIP-specific review focus
 
-    outputs/00_FINAL_CURATOR_PACKAGE
-        Files to share with curators.
+Curators should prioritize:
 
-    outputs/01_CURRENT_DRAFT_TABLES
-        Current pipeline-generated draft tables. Not curator-final.
+1. `Curator_Triage` sheet in the Excel workbook.
+2. Paper/study summaries.
+3. ChIP target-control/background mapping.
+4. Low-confidence or HIGH_REVIEW rows.
+5. Ambiguous stage/condition/strain labels.
+6. Large AP2 packets and shared-input control logic.
 
-    outputs/02_QC_SUMMARIES
-        Run status, PDF status, PMID lists, agentic AI coverage, and QC files.
+## Development roadmap
 
-    outputs/03_PER_PMID_INTERMEDIATES
-        Per-PMID audit/debug files.
+The current production-reorg branch has begun the cleanup process.
 
-    outputs/04_AGENTIC_AI_ASSIST
-        Optional agentic AI-generated notes, prompts, and logs.
+Completed:
 
-    outputs/05_LOGS
-        Batch pipeline logs.
+- frozen working pipeline state
+- active script map
+- safe workflow wrapper
+- clean final release builder
+- final release QC
 
-    outputs/06_ARCHIVE_OLD
-        Old/stale/incomplete outputs retained for safety.
+Next planned steps:
 
-    outputs/07_FINAL_CURATOR_APPROVED_MASTER
-        Reserved for final rowwise curator-approved metadata after merge-back.
+1. Add golden-output tests.
+2. Move shared logic into `src/sra_paper_curator/`.
+3. Replace numbered legacy scripts with stable workflow names.
+4. Move old scripts into `legacy_scripts/` only after wrapper parity tests pass.
+5. Add full developer and curator guides.
+6. Create publication-quality GitHub documentation.
 
-## More detailed guides
+## Trust model
 
-- docs/QUICKSTART.md
-- docs/PIPELINE_OVERVIEW.md
-- docs/OUTPUTS_GUIDE.md
-- docs/CURATOR_WORKFLOW.md
-- docs/CURATOR_APP_SPEC.md
-- docs/MERGE_BACK_PLAN.md
-- docs/AGENTIC_AI_ASSIST.md
+This is a curator-assist pipeline, not an autonomous truth engine.
 
-## Current development status
+The AI can summarize papers and suggest sample labels, but deterministic validators enforce structural correctness:
 
-The deterministic pipeline and curator-package workflow are working.
+- every source row must be covered
+- no missing or duplicate source rows
+- sample maps must partition rows correctly
+- ChIP target/control relationships are surfaced for review
+- repairs are allowed only when source-row coverage is exact
+- repairs write audit trails
 
-The next planned engineering step is to add stable curation_group_id values and implement the merge-back script that applies curator decisions to the rowwise draft table.
+Final biological correctness still requires curator review.
