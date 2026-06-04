@@ -32,6 +32,25 @@ SEARCH_DIRS = [
     Path("docs"),
 ]
 
+# Generated reports should not count as meaningful references.
+REFERENCE_IGNORE_FILES = {
+    "docs/SCRIPT_CLEANUP_INVENTORY.tsv",
+    "docs/SCRIPT_CLEANUP_PLAN.md",
+    "docs/UNMAPPED_SCRIPT_REVIEW.tsv",
+    "docs/UNMAPPED_SCRIPT_REVIEW.md",
+}
+
+# These are legacy docs/legacy drivers. They are useful historical references,
+# but they should not by themselves prevent archiving a script.
+WEAK_REFERENCE_FILES = {
+    "docs/LEGACY_README_BEFORE_PRODUCTION_REORG.md",
+    "docs/PIPELINE_OVERVIEW.md",
+    "docs/QUICKSTART.md",
+    "docs/WORKFLOW.md",
+    "scripts/README.md",
+    "scripts/run_curator_pipeline.py",
+}
+
 
 SCRATCH_HINTS = [
     "debug",
@@ -108,7 +127,8 @@ def read_text(path):
 def count_references(script_path):
     target = str(script_path)
     basename = Path(script_path).name
-    refs = []
+    strong_refs = []
+    weak_refs = []
 
     for d in SEARCH_DIRS:
         if not d.exists():
@@ -120,11 +140,19 @@ def count_references(script_path):
                 continue
             if p.suffix not in {".py", ".md", ".tsv", ".yaml", ".yml", ".txt"}:
                 continue
+
+            p_str = str(p)
+            if p_str in REFERENCE_IGNORE_FILES:
+                continue
+
             text = read_text(p)
             if target in text or basename in text:
-                refs.append(str(p))
+                if p_str in WEAK_REFERENCE_FILES:
+                    weak_refs.append(p_str)
+                else:
+                    strong_refs.append(p_str)
 
-    return sorted(set(refs))
+    return sorted(set(strong_refs)), sorted(set(weak_refs))
 
 
 def has_any(text, hints):
@@ -132,12 +160,12 @@ def has_any(text, hints):
     return any(h.lower() in low for h in hints)
 
 
-def classify(script, doc, refs):
+def classify(script, doc, strong_refs, weak_refs):
     name = Path(script).name.lower()
     combined = (name + " " + doc).lower()
 
-    if refs:
-        return "KEEP_REVIEW_REFERENCED", "Referenced by other tracked files; do not move without manual inspection."
+    if strong_refs:
+        return "KEEP_REVIEW_STRONG_CODE_REFERENCE", "Referenced by non-legacy tracked files; do not move without manual inspection."
 
     if has_any(combined, SCRATCH_HINTS):
         return "SCRATCH_OR_INSPECTION_CANDIDATE", "Looks like scratch/inspection/debug/exploratory code; candidate for archive after review."
@@ -166,21 +194,23 @@ def main():
     for r in unmapped:
         script = r["script"]
         doc = get_docstring(script)
-        refs = count_references(script)
-        category, recommendation = classify(script, doc, refs)
+        strong_refs, weak_refs = count_references(script)
+        category, recommendation = classify(script, doc, strong_refs, weak_refs)
 
         out_rows.append({
             "script": script,
             "category": category,
             "recommendation": recommendation,
-            "n_references": len(refs),
-            "references": " | ".join(refs[:20]),
+            "n_strong_references": len(strong_refs),
+            "strong_references": " | ".join(strong_refs[:20]),
+            "n_weak_references": len(weak_refs),
+            "weak_references": " | ".join(weak_refs[:20]),
             "docstring": doc[:500],
         })
 
     OUT_TSV.parent.mkdir(parents=True, exist_ok=True)
     with open(OUT_TSV, "w", newline="") as f:
-        cols = ["script", "category", "recommendation", "n_references", "references", "docstring"]
+        cols = ["script", "category", "recommendation", "n_strong_references", "strong_references", "n_weak_references", "weak_references", "docstring"]
         w = csv.DictWriter(f, fieldnames=cols, delimiter="\t")
         w.writeheader()
         w.writerows(out_rows)
@@ -205,7 +235,7 @@ def main():
     lines.append("")
     lines.append("## Categories")
     lines.append("")
-    lines.append("- KEEP_REVIEW_REFERENCED: referenced by tracked scripts/docs; do not move without inspection.")
+    lines.append("- KEEP_REVIEW_STRONG_CODE_REFERENCE: referenced by non-legacy tracked files; do not move without inspection.")
     lines.append("- SCRATCH_OR_INSPECTION_CANDIDATE: likely exploratory/inspection/debug; candidate for archive.")
     lines.append("- HISTORICAL_ARCHIVE_CANDIDATE: likely old prototype/pilot/versioned script; candidate for archive.")
     lines.append("- POSSIBLE_QC_UTILITY_REVIEW: may contain reusable validation/QC logic.")
@@ -220,9 +250,12 @@ def main():
         for r in by_cat[cat]:
             lines.append(f"- `{r['script']}`")
             lines.append(f"  - recommendation: {r['recommendation']}")
-            lines.append(f"  - references: {r['n_references']}")
-            if r["references"]:
-                lines.append(f"  - referenced by: {r['references']}")
+            lines.append(f"  - strong references: {r['n_strong_references']}")
+            if r["strong_references"]:
+                lines.append(f"  - strongly referenced by: {r['strong_references']}")
+            lines.append(f"  - weak legacy/doc references: {r['n_weak_references']}")
+            if r["weak_references"]:
+                lines.append(f"  - weakly referenced by: {r['weak_references']}")
             if r["docstring"]:
                 lines.append(f"  - doc: {r['docstring']}")
         lines.append("")
