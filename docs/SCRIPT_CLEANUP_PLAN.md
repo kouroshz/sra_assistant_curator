@@ -1,6 +1,6 @@
 # Script Cleanup Plan
 
-Generated: 2026-06-04T19:21:34
+Generated: 2026-06-04T19:22:29
 
 This is a non-destructive cleanup inventory.
 
@@ -8,17 +8,20 @@ Do not move active workflow scripts yet.
 
 ## Summary
 
+- ACTIVE_DEPENDENCY_KEEP: 3
 - ACTIVE_WORKFLOW: 41
 - PRODUCTION_INFRA: 8
-- UNMAPPED_REVIEW: 5
+- SUPPORT_UTILITY_KEEP_REVIEW: 2
 
 ## Cleanup policy
 
 1. Keep `ACTIVE_WORKFLOW` scripts in place until clean wrappers fully replace them.
 2. Keep `PRODUCTION_INFRA` scripts in place.
-3. Move only `SUPERSEDED_CANDIDATE` scripts first.
-4. Do not move `UNMAPPED_REVIEW` scripts until manually inspected.
-5. Run `python scripts/05_run_all_checks.py` after every move.
+3. Keep `ACTIVE_DEPENDENCY_KEEP` scripts in place because active workflow scripts call them.
+4. Keep `SUPPORT_UTILITY_KEEP_REVIEW` scripts for now; rename/refactor later if useful.
+5. Move only `SUPERSEDED_CANDIDATE` scripts after review.
+6. Do not move `UNMAPPED_REVIEW` scripts until manually inspected.
+7. Run `python scripts/05_run_all_checks.py` after every move.
 
 ## Scripts by category
 
@@ -173,21 +176,27 @@ Do not move active workflow scripts yet.
   - Production wrapper/QC/reorg infrastructure
   - doc: Classify unmapped scripts before legacy cleanup.  Non-destructive: - reads docs/SCRIPT_CLEANUP_INVENTORY.tsv - examines scripts marked UNMAPPED_REVIEW - checks whether they are referenced by active/production scripts - assigns a tentative review category - writes docs/UNMAPPED_SCRIPT_REVIEW.tsv - wr
 
+### ACTIVE_DEPENDENCY_KEEP
+
+- `scripts/41_batch_run_agentic_ai_on_trusted_queue.py`
+  - Helper dependency used by active production workflow scripts
+  - doc: Batch runner for trusted PMID-linked RNA-seq paper/BioProject packets.  Default behavior is DRY-RUN ONLY. Use --execute to call the API runner.  This script intentionally does NOT read any manual/gold-standard curation files. Gold standards should be used only later for independent verification.  Ty
+- `scripts/41c_run_agentic_ai_chunked_large_packet.py`
+  - Helper dependency used by active production workflow scripts
+  - doc: Chunked AI runner for large paper packets.  Design:   - Run script 39 on rowwise chunks.   - Collect only valid rowwise_suggestions.   - Ignore AI sample_map for final merged large-packet output.   - Build sample_map deterministically from merged rowwise_suggestions.   - If AI misses rows, add deter
+- `scripts/41d_batch_run_trusted_queue_auto_chunked.py`
+  - Helper dependency used by active production workflow scripts
+  - doc: Auto-dispatch batch runner for trusted RNA AI packets.  Small/moderate packets:   -> scripts/41_batch_run_agentic_ai_on_trusted_queue.py  Large packets:   -> scripts/41c_run_agentic_ai_chunked_large_packet.py  This keeps the original one-shot batch runner stable, while using chunked mode when row co
+
+### SUPPORT_UTILITY_KEEP_REVIEW
+
+- `scripts/65_audit_chip_repeats_and_chunk_failures.py`
+  - Support/diagnostic utility kept for current reorg/runbook infrastructure
+- `scripts/69_postdoc_handoff_inventory.py`
+  - Support/diagnostic utility kept for current reorg/runbook infrastructure
+
 ### SUPERSEDED_CANDIDATE
 
 
 ### UNMAPPED_REVIEW
 
-- `scripts/41_batch_run_agentic_ai_on_trusted_queue.py`
-  - Not in active workflow map; review before moving/deleting
-  - doc: Batch runner for trusted PMID-linked RNA-seq paper/BioProject packets.  Default behavior is DRY-RUN ONLY. Use --execute to call the API runner.  This script intentionally does NOT read any manual/gold-standard curation files. Gold standards should be used only later for independent verification.  Ty
-- `scripts/41c_run_agentic_ai_chunked_large_packet.py`
-  - Not in active workflow map; review before moving/deleting
-  - doc: Chunked AI runner for large paper packets.  Design:   - Run script 39 on rowwise chunks.   - Collect only valid rowwise_suggestions.   - Ignore AI sample_map for final merged large-packet output.   - Build sample_map deterministically from merged rowwise_suggestions.   - If AI misses rows, add deter
-- `scripts/41d_batch_run_trusted_queue_auto_chunked.py`
-  - Not in active workflow map; review before moving/deleting
-  - doc: Auto-dispatch batch runner for trusted RNA AI packets.  Small/moderate packets:   -> scripts/41_batch_run_agentic_ai_on_trusted_queue.py  Large packets:   -> scripts/41c_run_agentic_ai_chunked_large_packet.py  This keeps the original one-shot batch runner stable, while using chunked mode when row co
-- `scripts/65_audit_chip_repeats_and_chunk_failures.py`
-  - Not in active workflow map; review before moving/deleting
-- `scripts/69_postdoc_handoff_inventory.py`
-  - Not in active workflow map; review before moving/deleting

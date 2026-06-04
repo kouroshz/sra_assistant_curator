@@ -32,6 +32,17 @@ PRODUCTION_INFRA = {
     "scripts/07_classify_unmapped_scripts.py",
 }
 
+ACTIVE_DEPENDENCY_KEEP = {
+    "scripts/41_batch_run_agentic_ai_on_trusted_queue.py",
+    "scripts/41c_run_agentic_ai_chunked_large_packet.py",
+    "scripts/41d_batch_run_trusted_queue_auto_chunked.py",
+}
+
+SUPPORT_UTILITY_KEEP_REVIEW = {
+    "scripts/65_audit_chip_repeats_and_chunk_failures.py",
+    "scripts/69_postdoc_handoff_inventory.py",
+}
+
 
 SUPERSEDED_KNOWN = {
     "scripts/68_build_chip_curator_excel.py": "Superseded by scripts/68e_finalize_chip_curator_excel_v5.py",
@@ -72,6 +83,12 @@ def classify(path, active):
 
     if s in PRODUCTION_INFRA:
         return "PRODUCTION_INFRA", "Production wrapper/QC/reorg infrastructure"
+
+    if s in ACTIVE_DEPENDENCY_KEEP:
+        return "ACTIVE_DEPENDENCY_KEEP", "Helper dependency used by active production workflow scripts"
+
+    if s in SUPPORT_UTILITY_KEEP_REVIEW:
+        return "SUPPORT_UTILITY_KEEP_REVIEW", "Support/diagnostic utility kept for current reorg/runbook infrastructure"
 
     if s in SUPERSEDED_KNOWN:
         return "SUPERSEDED_CANDIDATE", SUPERSEDED_KNOWN[s]
@@ -122,14 +139,23 @@ def main():
     lines.append("")
     lines.append("1. Keep `ACTIVE_WORKFLOW` scripts in place until clean wrappers fully replace them.")
     lines.append("2. Keep `PRODUCTION_INFRA` scripts in place.")
-    lines.append("3. Move only `SUPERSEDED_CANDIDATE` scripts first.")
-    lines.append("4. Do not move `UNMAPPED_REVIEW` scripts until manually inspected.")
-    lines.append("5. Run `python scripts/05_run_all_checks.py` after every move.")
+    lines.append("3. Keep `ACTIVE_DEPENDENCY_KEEP` scripts in place because active workflow scripts call them.")
+    lines.append("4. Keep `SUPPORT_UTILITY_KEEP_REVIEW` scripts for now; rename/refactor later if useful.")
+    lines.append("5. Move only `SUPERSEDED_CANDIDATE` scripts after review.")
+    lines.append("6. Do not move `UNMAPPED_REVIEW` scripts until manually inspected.")
+    lines.append("7. Run `python scripts/05_run_all_checks.py` after every move.")
     lines.append("")
     lines.append("## Scripts by category")
     lines.append("")
 
-    for status in ["ACTIVE_WORKFLOW", "PRODUCTION_INFRA", "SUPERSEDED_CANDIDATE", "UNMAPPED_REVIEW"]:
+    for status in [
+        "ACTIVE_WORKFLOW",
+        "PRODUCTION_INFRA",
+        "ACTIVE_DEPENDENCY_KEEP",
+        "SUPPORT_UTILITY_KEEP_REVIEW",
+        "SUPERSEDED_CANDIDATE",
+        "UNMAPPED_REVIEW",
+    ]:
         lines.append(f"### {status}")
         lines.append("")
         for r in by_status.get(status, []):
