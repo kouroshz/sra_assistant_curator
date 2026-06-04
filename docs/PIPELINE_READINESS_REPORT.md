@@ -1,18 +1,14 @@
 # Pipeline Readiness Report
 
-Generated: 2026-06-04T17:56:09
+Generated: 2026-06-04T17:57:28
 
 This report summarizes whether the current production-reorg branch is ready for controlled use and further refactoring.
 
 ## Git state
 
 - branch: `production-reorg`
-- latest commit: `7844c57 Add golden-output regression tests`
-- working tree: DIRTY
-
-Uncommitted changes:
-
-- `?? scripts/04_pipeline_readiness_report.py`
+- latest commit: `c1f1fb6 Add pipeline readiness report`
+- working tree: clean
 
 ## Required tracked files
 
@@ -70,7 +66,7 @@ Test output excerpt:
     test_workflow_runner_dry_run_default (__main__.TestGoldenOutputs.test_workflow_runner_dry_run_default) ... ok
     
     ----------------------------------------------------------------------
-    Ran 7 tests in 0.193s
+    Ran 7 tests in 0.245s
     
     OK
 
@@ -83,7 +79,7 @@ Test output excerpt:
 
 - PASS latest release pointer exists: `results/LATEST_FINAL_CURATOR_RELEASE.txt`
   - `results/final_curator_release`
-  - `results/final_curator_release_20260604_175609.zip`
+  - `results/final_curator_release_20260604_175728.zip`
 
 ## Remaining technical debt
 
@@ -100,6 +96,8 @@ Remaining cleanup:
 
 ## Final verdict
 
-FAIL / REVIEW
+PASS
 
-- Working tree has uncommitted changes.
+The current production-reorg branch has a clean final release, passing release QC, passing golden-output tests, and safe default behavior for AI-capable steps.
+
+It is ready for controlled internal use and for the next refactoring phase.
