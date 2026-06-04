@@ -1,0 +1,25 @@
+project:
+  name: sra_paper_curator
+  mode: curator_assist
+
+safety:
+  dry_run_default: true
+  ai_enabled_by_default: false
+  require_execute_for_any_write: true
+  require_execute_ai_for_api_calls: true
+
+paths:
+  active_script_map: outputs/00_REORG_AUDIT/ACTIVE_SCRIPT_MAP.tsv
+  final_output_map: outputs/00_REORG_AUDIT/FINAL_OUTPUT_MAP.tsv
+  final_release_root: results/final_curator_release
+
+ai:
+  enabled: false
+  provider: openai
+  require_env_flag: AGENTIC_AI_ENABLE_API
+  required_env_value: "1"
+
+notes:
+  - AI suggestions are curator aids only.
+  - Deterministic validators and repairs are separate from AI.
+  - Final curator-facing outputs should be copied into one clean release folder.
