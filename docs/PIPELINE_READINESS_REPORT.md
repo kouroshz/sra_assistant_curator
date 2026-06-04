@@ -1,22 +1,14 @@
 # Pipeline Readiness Report
 
-Generated: 2026-06-04T19:37:09
+Generated: 2026-06-04T19:39:18
 
 This report summarizes whether the current branch is ready for controlled use and further refactoring.
 
 ## Git state
 
 - branch: `production-reorg`
-- latest commit: `0732a52 Refresh pipeline readiness report for v1.0 cleanup`
-- working tree: DIRTY
-
-Uncommitted changes:
-
-- `M README.md`
-- ` M docs/DEVELOPER_GUIDE.md`
-- ` M scripts/04_pipeline_readiness_report.py`
-- ` M scripts/05_run_all_checks.py`
-- `?? src/sra_paper_curator/artifact_checks.py`
+- latest commit: `224497f Support fresh-clone smoke checks without generated artifacts`
+- working tree: clean
 
 ## Required tracked files
 
@@ -78,7 +70,7 @@ Test output excerpt:
     test_workflow_runner_dry_run_default (__main__.TestGoldenOutputs.test_workflow_runner_dry_run_default) ... ok
     
     ----------------------------------------------------------------------
-    Ran 7 tests in 0.197s
+    Ran 7 tests in 0.238s
     
     OK
 
@@ -91,7 +83,7 @@ Test output excerpt:
 
 - PASS latest release pointer exists: `results/LATEST_FINAL_CURATOR_RELEASE.txt`
   - `results/final_curator_release`
-  - `results/final_curator_release_20260604_193709.zip`
+  - `results/final_curator_release_20260604_193918.zip`
 
 ## Remaining technical debt
 
@@ -107,6 +99,8 @@ Remaining cleanup:
 
 ## Final verdict
 
-FAIL / REVIEW
+PASS
 
-- Working tree has uncommitted changes.
+The current branch has a clean final release, passing release QC, passing golden-output tests, and safe default behavior for AI-capable steps.
+
+It is ready for controlled internal use and for the next refactoring/testing phase.
