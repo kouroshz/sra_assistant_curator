@@ -1,6 +1,6 @@
 # Script Cleanup Plan
 
-Generated: 2026-06-04T18:20:40
+Generated: 2026-06-04T18:22:13
 
 This is a non-destructive cleanup inventory.
 
@@ -10,7 +10,6 @@ Do not move active workflow scripts yet.
 
 - ACTIVE_WORKFLOW: 41
 - PRODUCTION_INFRA: 7
-- SUPERSEDED_CANDIDATE: 6
 - UNMAPPED_REVIEW: 40
 
 ## Cleanup policy
@@ -173,23 +172,6 @@ Do not move active workflow scripts yet.
 
 ### SUPERSEDED_CANDIDATE
 
-- `scripts/68_build_chip_curator_excel.py`
-  - Superseded by scripts/68e_finalize_chip_curator_excel_v5.py
-- `scripts/68b_build_chip_curator_excel_v2.py`
-  - Superseded by scripts/68e_finalize_chip_curator_excel_v5.py
-  - doc: Build a more curator-facing ChIP review workbook.  This improves the first ChIP workbook by mirroring the RNA curator-facing logic:  - richer Study_Review - richer Rowwise_Review with source metadata - Target_Control_Map_Review includes confidence, review flags, evidence, and resolved control rows -
-- `scripts/68c_polish_chip_curator_excel_v3.py`
-  - Superseded by scripts/68e_finalize_chip_curator_excel_v5.py
-  - doc: Polish ChIP curator workbook to be closer to RNA curator-facing style.  Input:   latest workbook pointed to by:     outputs/06_CHIP_AI_ASSIST/21_curator_excel/LATEST_CHIP_CURATOR_REVIEW.txt  Output:   outputs/06_CHIP_AI_ASSIST/21_curator_excel/chip_curator_review_v3_<timestamp>.xlsx  No API required
-- `scripts/68d_polish_chip_curator_excel_v4.py`
-  - Superseded by scripts/68e_finalize_chip_curator_excel_v5.py
-  - doc: Final curator-facing polish for ChIP workbook.  Main goals: - Make Problem_Rows match RNA style: one row per source row, aggregated flags/messages. - Preserve original detailed issue rows in Problem_Details. - Flag target-control rows where AI names a background class but no concrete control source 
-- `scripts/72_export_chip_study_summaries_clean.py`
-  - Superseded by scripts/72c_final_qc_chip_study_summaries.py
-  - doc: Export ChIP whole-paper AI study summaries, RNA-style.  This reads the active validated ChIP AI JSONs directly and extracts the `study_summary` dict from each JSON.  Outputs:   outputs/06_CHIP_AI_ASSIST/23_study_summaries/     CHIP_AI_STUDY_SUMMARIES_CLEAN.md     chip_ai_study_summaries_clean.tsv   
-- `scripts/72b_qc_and_export_chip_study_summaries_rna_style.py`
-  - Superseded by scripts/72c_final_qc_chip_study_summaries.py
-  - doc: QC and export ChIP study summaries in RNA-style format.  This fixes the previous ChIP markdown problem: - removes always-empty sections like "Main findings: Not specified" - writes compact one-packet-per-block summaries like RNA - writes a QC report showing missing/non-informative fields - keeps TSV
 
 ### UNMAPPED_REVIEW
 
