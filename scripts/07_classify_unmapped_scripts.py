@@ -164,6 +164,23 @@ def classify(script, doc, strong_refs, weak_refs):
     name = Path(script).name.lower()
     combined = (name + " " + doc).lower()
 
+    # Helper scripts used by active production workflow scripts.
+    active_dependency_scripts = {
+        "41_batch_run_agentic_ai_on_trusted_queue.py",
+        "41c_run_agentic_ai_chunked_large_packet.py",
+        "41d_batch_run_trusted_queue_auto_chunked.py",
+    }
+    if Path(script).name in active_dependency_scripts:
+        return "ACTIVE_DEPENDENCY_KEEP", "Helper dependency used by active production RNA AI runner; keep in scripts for now."
+
+    # Support/diagnostic scripts that are still useful but not first-line workflow steps.
+    support_scripts = {
+        "65_audit_chip_repeats_and_chunk_failures.py",
+        "69_postdoc_handoff_inventory.py",
+    }
+    if Path(script).name in support_scripts:
+        return "SUPPORT_UTILITY_KEEP_REVIEW", "Support/diagnostic utility referenced by current reorg/runbook infrastructure; keep for now, rename later."
+
     if strong_refs:
         return "KEEP_REVIEW_STRONG_CODE_REFERENCE", "Referenced by non-legacy tracked files; do not move without manual inspection."
 
@@ -235,6 +252,8 @@ def main():
     lines.append("")
     lines.append("## Categories")
     lines.append("")
+    lines.append("- ACTIVE_DEPENDENCY_KEEP: helper dependency used by active production workflow scripts.")
+    lines.append("- SUPPORT_UTILITY_KEEP_REVIEW: support/diagnostic utility; keep for now, rename later.")
     lines.append("- KEEP_REVIEW_STRONG_CODE_REFERENCE: referenced by non-legacy tracked files; do not move without inspection.")
     lines.append("- SCRATCH_OR_INSPECTION_CANDIDATE: likely exploratory/inspection/debug; candidate for archive.")
     lines.append("- HISTORICAL_ARCHIVE_CANDIDATE: likely old prototype/pilot/versioned script; candidate for archive.")
