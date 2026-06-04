@@ -1,13 +1,14 @@
 # Unmapped Script Review
 
-Generated: 2026-06-04T19:22:29
+Generated: 2026-06-04T19:23:15
 
 This is a non-destructive classification of scripts not currently in `workflows/steps.tsv` and not production infrastructure.
 
-Do not move these automatically. Use this report to decide what should be archived next.
+No scripts are currently classified as UNMAPPED_REVIEW. Remaining scripts are accounted for in docs/SCRIPT_CLEANUP_PLAN.md.
 
 ## Summary
 
+- No UNMAPPED_REVIEW scripts remain.
 
 ## Categories
 

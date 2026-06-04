@@ -243,12 +243,18 @@ def main():
     lines.append("")
     lines.append("This is a non-destructive classification of scripts not currently in `workflows/steps.tsv` and not production infrastructure.")
     lines.append("")
-    lines.append("Do not move these automatically. Use this report to decide what should be archived next.")
+    if unmapped:
+        lines.append("Do not move these automatically. Use this report to decide what should be archived next.")
+    else:
+        lines.append("No scripts are currently classified as UNMAPPED_REVIEW. Remaining scripts are accounted for in docs/SCRIPT_CLEANUP_PLAN.md.")
     lines.append("")
     lines.append("## Summary")
     lines.append("")
-    for cat in sorted(by_cat):
-        lines.append(f"- {cat}: {len(by_cat[cat])}")
+    if by_cat:
+        for cat in sorted(by_cat):
+            lines.append(f"- {cat}: {len(by_cat[cat])}")
+    else:
+        lines.append("- No UNMAPPED_REVIEW scripts remain.")
     lines.append("")
     lines.append("## Categories")
     lines.append("")
