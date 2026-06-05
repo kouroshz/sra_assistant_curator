@@ -48,6 +48,7 @@ PYTHON_FILES_TO_COMPILE = [
     "scripts/41_batch_run_agentic_ai_on_trusted_queue.py",
     "scripts/41e_batch_run_trusted_queue_production.py",
     "scripts/62_batch_run_chip_small_packets_production.py",
+    "scripts/90_show_curator_outputs.py",
     "workflows/run_workflow_step.py",
     "tests/test_golden_outputs.py",
 ]

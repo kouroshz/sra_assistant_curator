@@ -188,7 +188,26 @@ python scripts/03_qc_final_release.py
 
 The final package excludes raw PDFs, `.env`, keys, raw AI JSONs, and bulky intermediates.
 
-## 10. Sanity Counts From Current Production State
+## 10. Finding The Final Outputs
+
+Print the current curator-facing output locations:
+
+```bash
+python scripts/90_show_curator_outputs.py
+```
+
+The expected final release paths are:
+
+```text
+results/final_curator_release/RNA/RNA_curator_review.xlsx
+results/final_curator_release/ChIP/ChIP_curator_review.xlsx
+results/final_curator_release/RNA/RNA_AI_STUDY_SUMMARIES_CLEAN.md
+results/final_curator_release/ChIP/CHIP_AI_STUDY_SUMMARIES_CLEAN.md
+```
+
+The same release folder also contains clean summary TSVs, QC reports, a manifest, and release README.
+
+## 11. Sanity Counts From Current Production State
 
 These are regression sanity checks from the current production artifacts, not biological claims:
 
@@ -204,7 +223,7 @@ Golden-output tests: 7 passing tests
 
 Counts may legitimately change after a fresh rerun if input workbooks, paper availability, or curation policy changes. Any change should be explained in the rerun notes.
 
-## 11. Final Validation Commands
+## 12. Final Validation Commands
 
 ```bash
 python scripts/05_run_all_checks.py

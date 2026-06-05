@@ -307,9 +307,13 @@ This makes the repository safe for fresh clones, reviewer inspection, and postdo
 
 ## Final curator release
 
-Create the clean final release:
+To see final curator outputs:
 
-    python scripts/02_create_clean_final_release.py
+    python scripts/90_show_curator_outputs.py
+
+To package final outputs:
+
+    python workflows/run_workflow_step.py --step 90 --execute
 
 Run release QC:
 
@@ -346,6 +350,7 @@ Final ChIP files include:
 Curators should start with:
 
     docs/CURATOR_GUIDE.md
+    python scripts/90_show_curator_outputs.py
     results/final_curator_release/README.md
 
 ---
