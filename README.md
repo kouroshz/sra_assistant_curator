@@ -1,502 +1,236 @@
 # SRA Paper Curator
 
-Curator-assist workflow for converting public SRA/GEO sequencing metadata and paper context into reviewable RNA-seq and ChIP-seq curation workbooks.
+A curator-assistance workflow for turning public SRA/GEO metadata plus paper context into reviewer-facing RNA-seq and ChIP-seq curation outputs for Plasmodium sequencing studies.
 
-The current motivating use case is public Plasmodium RNA-seq and ChIP-seq metadata curation for downstream gene-regulatory-network analysis.
+The workflow is built around deterministic metadata processing, validation, audit trails, and human curator review. AI can optionally assist with paper interpretation, but it is off by default and never bypasses deterministic checks.
 
-Core principle:
+## What You Need
 
-AI may assist paper and metadata interpretation, but deterministic validation, audit trails, and human curator review remain authoritative.
+Required local workbooks:
 
-Required local input workbooks for a fresh rerun:
+```text
+data/rna_seq_metadata_2026-05-05_original.xlsx
+data/plasmodium_chip_metadata_public_and_Manish_replicates_2025-03-30_V10.xlsx
+```
 
-    data/rna_seq_metadata_2026-05-05_original.xlsx
-    data/plasmodium_chip_metadata_public_and_Manish_replicates_2025-03-30_V10.xlsx
+These workbooks, generated outputs, downloaded papers, caches, API JSONs, final Excel workbooks, and release zips are intentionally not committed.
 
-Generated outputs, caches, downloaded papers, AI JSONs, and curator Excel files are not committed.
+Optional local inputs:
 
-Detailed local input and rerun instructions:
+- `papers/*.pdf` for paper-aware AI review
+- `data/sra_runinfo_cache/` and `data/biosample_cache/` to speed reruns
+- `.env` copied from `.env.example` for local NCBI/OpenAI configuration
 
-- `docs/LOCAL_INPUTS.md`
-- `docs/RERUN_VALIDATION.md`
+Do not replace the tracked `papers/` directory with a symlink. Copy PDFs into it or symlink individual PDF files inside it.
 
----
+## What It Produces
 
-## Current status
+Final curator-facing outputs are packaged under:
 
-This repository contains a working RNA/ChIP curator-assist workflow with:
+```text
+results/final_curator_release/
+```
 
-- production-facing workflow wrappers
-- deterministic public metadata enrichment
-- optional AI-assisted paper/metadata review
-- deterministic AI-output validation
-- curator-facing Excel, Markdown, and TSV release generation
-- release QC
-- golden-output regression checks
-- fresh-clone smoke checks
-- archived legacy/prototype scripts
+Key outputs:
 
-Main production checkpoint:
+```text
+results/final_curator_release/RNA/RNA_curator_review.xlsx
+results/final_curator_release/ChIP/ChIP_curator_review.xlsx
+results/final_curator_release/RNA/RNA_AI_STUDY_SUMMARIES_CLEAN.md
+results/final_curator_release/ChIP/CHIP_AI_STUDY_SUMMARIES_CLEAN.md
+results/final_curator_release/RNA/rna_ai_study_summaries_clean.tsv
+results/final_curator_release/ChIP/chip_ai_study_summaries_clean.tsv
+results/final_curator_release/QC/FINAL_RELEASE_QC_REPORT.md
+results/final_curator_release_*.zip
+```
 
-    v1.3-main-merged-artifact-pass
+To find current outputs:
 
-At this checkpoint:
+```bash
+python scripts/90_show_curator_outputs.py
+```
 
-- fresh-clone smoke checks pass
-- local artifact-backed production checks pass
-- AI/API execution is off by default
-- generated outputs are excluded from Git
-- legacy/prototype scripts are archived under legacy_scripts/
+## Deterministic Vs Optional AI
 
----
+Deterministic steps:
 
-## Installation
+- build stable rowwise evidence
+- fetch/cache public SRA/BioSample/Entrez metadata
+- resolve publication links
+- prepare paper/PDF manifests
+- build AI-ready queues and packets
+- validate AI outputs structurally
+- build curator workbooks, summaries, QC reports, and final release bundles
 
-Create the conda environment:
+Optional AI steps:
 
-    conda env create -f environment.yml
-    conda activate sra_paper_curator
+- RNA AI packet/batch review
+- ChIP AI packet/batch review
 
-The environment is defined in environment.yml and currently includes:
+AI/API execution requires explicit opt-in with `--execute --execute-ai` and `AGENTIC_AI_ENABLE_API=1`. `OPENAI_API_KEY` is needed only for real AI runs.
 
-    python=3.11
-    pandas
-    openpyxl
-    xlsxwriter
-    numpy
-    pyyaml
-    tqdm
-    rich
-    pydantic
-    openai
-    python-dotenv
-    pypdf
+## Quick Start
 
-The OpenAI-related packages are installed for optional AI-assisted steps. AI/API calls are not made by default.
+Create or update the environment:
 
----
+```bash
+# First-time setup
+conda env create -f environment.yml
+conda activate sra_paper_curator
 
-## Fresh-clone smoke test
+# To update an existing environment later
+conda env update -n sra_paper_curator -f environment.yml --prune
+```
 
-A fresh clone does not contain generated outputs/ or results/ artifacts.
+Place or symlink the input workbooks:
 
-Run:
+```bash
+mkdir -p data
+ln -s /absolute/path/to/rna_seq_metadata_2026-05-05_original.xlsx data/rna_seq_metadata_2026-05-05_original.xlsx
+ln -s /absolute/path/to/plasmodium_chip_metadata_public_and_Manish_replicates_2025-03-30_V10.xlsx data/plasmodium_chip_metadata_public_and_Manish_replicates_2025-03-30_V10.xlsx
+```
 
-    python scripts/05_run_all_checks.py
-    python scripts/04_pipeline_readiness_report.py
+Create local config:
 
-Expected result:
+```bash
+cp .env.example .env
+```
 
-    PASS: repo smoke checks passed.
+Set `NCBI_EMAIL` in `.env` for public metadata and paper-download steps. Keep `AGENTIC_AI_ENABLE_API=0` unless intentionally running AI.
 
-In a fresh clone, artifact-backed checks are skipped because generated output files are absent. This is expected.
+Run readiness and smoke checks:
 
-The smoke test verifies that:
+```bash
+python scripts/06_rerun_readiness_check.py
+python scripts/05_run_all_checks.py
+```
 
-- production Python files compile
-- the workflow wrapper is available
-- non-AI workflow steps default to dry-run
-- AI-capable workflow steps refuse execution unless explicitly enabled
+Run RNA deterministic setup to the AI boundary:
 
----
+```bash
+python workflows/run_workflow_step.py --continue-from 00 --through 05 --execute
+```
 
-## Artifact-backed production validation
+No-papers mode is supported through RNA Step 05; the trusted queue builds, but packets defer when `paper_pdf_count=0`.
 
-On a working machine that already contains generated outputs/ artifacts, run:
+Run ChIP deterministic setup to the AI boundary:
 
-    python scripts/05_run_all_checks.py --with-artifacts
-    python scripts/04_pipeline_readiness_report.py
+```bash
+python workflows/run_workflow_step.py --continue-from 20 --through 32 --execute
+```
 
-This performs full production validation:
+After AI/post-AI validation and finalization have completed, or when inspecting an existing generated release, find or package curator outputs:
 
-- compiles production Python files
-- rebuilds the clean final curator release
-- runs final release QC
-- runs golden-output regression tests
-- confirms workflow dry-run safety
-- confirms AI execution guard behavior
+```bash
+python scripts/90_show_curator_outputs.py
+python workflows/run_workflow_step.py --step 90 --execute
+```
 
-Expected result:
+## Full Rerun With API
 
-    PASS: all production checks passed.
+API is off by default. Never commit `.env`.
 
----
+For intentional AI-enabled runs:
 
-## Repository layout
+```bash
+cp .env.example .env
+```
 
-    .
-    README.md
-    environment.yml
-    pyproject.toml
-    configs/
-    workflows/
-    scripts/
-    src/sra_paper_curator/
-    tests/
-    docs/
-    legacy_scripts/
-    outputs/     generated, ignored by Git
-    results/     generated, ignored by Git
+Edit `.env` locally:
 
-Important files:
+```text
+OPENAI_API_KEY=your-local-key
+AGENTIC_AI_ENABLE_API=1
+```
 
-    workflows/steps.tsv
-    workflows/run_workflow_step.py
-    scripts/02_create_clean_final_release.py
-    scripts/03_qc_final_release.py
-    scripts/04_pipeline_readiness_report.py
-    scripts/05_run_all_checks.py
-    docs/ACTIVE_WORKFLOW_MAP.md
-    docs/CURATOR_GUIDE.md
-    docs/DEVELOPER_GUIDE.md
-    docs/GOLDEN_OUTPUTS.md
-    docs/LOCAL_INPUTS.md
-    docs/RERUN_VALIDATION.md
-    docs/PIPELINE_READINESS_REPORT.md
+Then use workflow commands with both `--execute` and `--execute-ai`.
 
----
+RNA AI steps:
 
-## Workflow overview
+```text
+06  one-packet AI runner
+07  RNA trusted batch AI runner
+```
 
-The workflow has five conceptual layers.
+ChIP AI step:
 
-### 1. Input and rowwise evidence
+```text
+33  ChIP small-packet AI batch runner
+```
 
-The pipeline starts from RNA and ChIP metadata workbooks, then creates rowwise evidence tables with stable IDs and public metadata evidence from SRA/BioSample.
+Examples:
 
-Core actions:
+```bash
+python workflows/run_workflow_step.py --step 07 --execute --execute-ai
+python workflows/run_workflow_step.py --step 33 --execute --execute-ai
+```
 
-- assign stable row IDs
-- fetch/cache public SRA RunInfo and BioSample metadata
-- build rowwise evidence tables
-- preserve source-row provenance
+After AI JSONs exist, continue the deterministic validation, repair, inventory, workbook, summary, and release-generation steps. See `docs/RERUN_VALIDATION.md` for the full RNA and ChIP command sequence, including ChIP chunked-packet handling.
 
-### 2. Publication and packet construction
+## Key Commands
 
-Rows are grouped into paper/BioProject review units.
+List workflow steps:
 
-Core actions:
+```bash
+python workflows/run_workflow_step.py --list
+```
 
-- resolve PMID/BioProject links
-- write trusted and held publication packet tables
-- build deterministic paper-packet priority queue
-- identify paper availability
-- build paper/BioProject packets
-- prepare packet-level metadata and sidecar rowwise evidence
+Dry-run one step:
 
-Key generated products:
+```bash
+python workflows/run_workflow_step.py --step 28
+```
 
-    outputs/02_QC_SUMMARIES/trusted_pmid_packets.tsv
-    outputs/02_QC_SUMMARIES/held_or_unresolved_pmid_packets.tsv
-    outputs/04_AGENTIC_AI_ASSIST/paper_packets/paper_packet_ai_priority_queue.tsv
+Run a deterministic range:
 
-`papers/` is a local working directory and is not committed. Paper packets can be built before PDFs are available, but real AI-assisted curation should only be run after papers/PDF text are downloaded or otherwise prepared; otherwise the queue and downstream checks should report missing local paper context.
+```bash
+python workflows/run_workflow_step.py --continue-from 20 --through 32 --execute
+```
 
-### 3. Optional AI-assisted curation
+Package final outputs:
 
-AI-assisted steps are optional and disabled by default.
+```bash
+python workflows/run_workflow_step.py --step 90 --execute
+```
 
-Core actions:
+Show final output paths:
 
-- read packet metadata and paper text
-- suggest biological sample labels
-- summarize paper/study context
-- identify RNA sample groups or ChIP target/control relationships
+```bash
+python scripts/90_show_curator_outputs.py --with-open-command
+```
 
-AI output is never treated as final truth.
+## Documentation
 
-### 4. Deterministic validation and repair
+- `docs/LOCAL_INPUTS.md`: required local files, papers directory rules, cache notes
+- `docs/RERUN_VALIDATION.md`: practical rerun procedure and validation checkpoints
+- `docs/API_ASSIST_OPTIONAL_SETUP.md`: optional API setup details
+- `workflows/steps.tsv`: authoritative workflow step map
+- `docs/CURATOR_GUIDE.md`: curator-facing review notes
+- `docs/GOLDEN_OUTPUTS.md`: regression-count expectations
 
-Validation is deterministic and separate from AI.
+## Repository Layout
 
-Core checks include:
+```text
+configs/
+data/            local inputs and caches; most files ignored
+docs/
+legacy_scripts/
+outputs/         generated; ignored
+papers/          local PDFs; ignored except placeholders
+results/         final release artifacts; ignored
+scripts/
+src/sra_paper_curator/
+tests/
+workflows/
+```
 
-- every source row is covered exactly once
-- no duplicate or missing source rows
-- sample maps reference valid rows
-- ChIP target/control relationships are surfaced for review
-- repairs are applied only when source-row coverage is exact
-- repair audit trails are written
+## Safety Model
 
-### 5. Curator-facing release generation
+- No OpenAI calls are made by default.
+- Workflow execution is dry-run by default.
+- AI-capable steps require `--execute --execute-ai` plus `AGENTIC_AI_ENABLE_API=1`.
+- API keys and `.env` are ignored by Git.
+- Final packaging excludes raw PDFs, `.env`, keys, raw AI JSONs, and bulky intermediates.
+- Curator Excel formatting scripts should not be edited during rerun validation.
 
-Validated outputs are converted into human-facing deliverables:
-
-- Excel review workbooks
-- paper/study summary Markdown files
-- companion TSV tables
-- QC reports
-- final release manifest and zip
-
----
-
-## Workflow wrapper usage
-
-Workflow steps are listed in:
-
-    workflows/steps.tsv
-
-List all workflow steps:
-
-    python workflows/run_workflow_step.py --list
-
-Show one step without running it:
-
-    python workflows/run_workflow_step.py --step 90
-
-Dry-run a deterministic range:
-
-    python workflows/run_workflow_step.py --continue-from 00 --through 05
-
-Execute a deterministic non-AI range:
-
-    python workflows/run_workflow_step.py --continue-from 00 --through 05 --execute
-
-Run a non-AI step:
-
-    python workflows/run_workflow_step.py --step 90 --execute
-
-Run an AI-capable step:
-
-    AGENTIC_AI_ENABLE_API=1 python workflows/run_workflow_step.py --step 33 --execute --execute-ai
-
-The wrapper refuses AI-capable execution unless both are present:
-
-    --execute-ai
-    AGENTIC_AI_ENABLE_API=1
-
-Batch AI runners also require `OPENAI_API_KEY` when `--execute` is used. The key is never printed.
-
----
-
-## Optional API configuration
-
-Deterministic reruns do not need OpenAI API access.
-
-Real AI-assisted steps require either exported environment variables or a local `.env` file that is never committed:
-
-    cp .env.example .env
-
-Then edit `.env` locally:
-
-    OPENAI_API_KEY=your-local-key
-    OPENAI_MODEL=optional-model
-    OPENAI_SMALL_MODEL=optional-small-model
-
-Keep API execution disabled until you intentionally run an AI step:
-
-    AGENTIC_AI_ENABLE_API=0
-
-Set `AGENTIC_AI_ENABLE_API=1` only for deliberate API-enabled runs. Never commit `.env`.
-
----
-
-## AI/API safety model
-
-Default behavior is safe:
-
-- no OpenAI/API calls are made by default
-- workflow steps are dry-run by default
-- AI-capable steps require explicit opt-in
-- .env and API keys are excluded from Git
-- final release packaging excludes raw AI JSON, raw PDFs, .env files, keys, and bulky intermediates
-
-This makes the repository safe for fresh clones, reviewer inspection, and postdoc handoff.
-
----
-
-## Final curator release
-
-To see final curator outputs:
-
-    python scripts/90_show_curator_outputs.py
-
-To package final outputs:
-
-    python workflows/run_workflow_step.py --step 90 --execute
-
-Run release QC:
-
-    python scripts/03_qc_final_release.py
-
-Generated release folder:
-
-    results/final_curator_release/
-
-Latest release pointer:
-
-    results/LATEST_FINAL_CURATOR_RELEASE.txt
-
-Generated release artifacts are ignored by Git.
-
----
-
-## Curator-facing outputs
-
-Final RNA files include:
-
-    RNA/RNA_curator_review.xlsx
-    RNA/RNA_AI_STUDY_SUMMARIES_CLEAN.md
-    RNA/rna_ai_study_summaries_clean.tsv
-
-Final ChIP files include:
-
-    ChIP/ChIP_curator_review.xlsx
-    ChIP/CHIP_AI_STUDY_SUMMARIES_CLEAN.md
-    ChIP/chip_ai_study_summaries_clean.tsv
-    ChIP/chip_rowwise_review.tsv
-    ChIP/chip_target_control_map_review.tsv
-
-Curators should start with:
-
-    docs/CURATOR_GUIDE.md
-    python scripts/90_show_curator_outputs.py
-    results/final_curator_release/README.md
-
----
-
-## Golden-output checks
-
-Golden-output regression checks are defined in:
-
-    tests/test_golden_outputs.py
-    docs/GOLDEN_OUTPUTS.md
-
-Current expected release counts:
-
-    RNA study summaries: 69
-    ChIP study summaries: 42
-    ChIP rowwise review rows: 733
-    ChIP target-control map rows: 490
-
-These are regression checks for the current known-good output state. They are not biological claims.
-
----
-
-## What is a packet?
-
-A packet is the core review unit:
-
-    one PMID plus one BioProject
-
-A packet contains:
-
-- rowwise SRA/BioSample metadata evidence
-- paper context
-- AI curation output, if AI was run
-- deterministic validation/QC results
-
-For RNA, a packet asks:
-
-- What are the biological sample groups?
-- What are the major comparisons?
-- Are stage, strain, treatment, timepoint, and condition labels clear?
-- Is the metadata sufficient for count/DE-ready downstream analysis?
-
-For ChIP, a packet also asks:
-
-- Which rows are target IP?
-- Which rows are input, IgG, mock, untagged, or background controls?
-- Which target rows map to which control rows?
-- Is the packet peak-calling ready?
-
----
-
-## Trust and review model
-
-This is a curator-assist pipeline, not an autonomous truth engine.
-
-AI can:
-
-- summarize papers
-- suggest sample labels
-- suggest ChIP target/control relationships
-- flag ambiguous metadata
-
-AI cannot:
-
-- make final biological decisions
-- bypass deterministic validation
-- overwrite curator-final decisions
-- run unless explicitly enabled
-
-Deterministic validators enforce structural correctness:
-
-- every source row must be covered
-- no missing or duplicate source rows
-- sample maps must partition rows correctly
-- ChIP target/control relationships are surfaced for review
-- repairs are allowed only under explicit safety rules
-- repairs write audit trails
-
-Final biological correctness still requires curator review.
-
----
-
-## Data and generated artifacts
-
-This repository does not commit generated working outputs.
-
-Ignored/generated paths include:
-
-    outputs/
-    results/
-    local_scratch/
-    .env
-    raw PDFs
-    raw AI JSON files
-    API keys
-
-This keeps GitHub lightweight and safe.
-
-To reproduce artifact-backed checks, use a working checkout that contains the generated outputs/ directory or rerun the workflow to regenerate it.
-
----
-
-## Documentation map
-
-Recommended starting points:
-
-    README.md
-    docs/REVIEWER_GUIDE.md
-    docs/CURATOR_GUIDE.md
-    docs/DEVELOPER_GUIDE.md
-    docs/ACTIVE_WORKFLOW_MAP.md
-    docs/GOLDEN_OUTPUTS.md
-    docs/PIPELINE_READINESS_REPORT.md
-    workflows/README.md
-
----
-
-## Reviewer quickstart
-
-    conda env create -f environment.yml
-    conda activate sra_paper_curator
-    python scripts/05_run_all_checks.py
-    python scripts/04_pipeline_readiness_report.py
-
-This should pass in a fresh clone and explain that artifact-backed checks are skipped unless generated outputs are present.
-
-For full artifact-backed validation on the production machine:
-
-    python scripts/05_run_all_checks.py --with-artifacts
-
----
-
-## Known limitations
-
-The current repository is production-organized and validated against existing generated artifacts, but a full controlled end-to-end rerun from raw/local inputs remains the next validation phase.
-
-The next phase should test:
-
-- deterministic rerun without AI
-- packet regeneration
-- release regeneration
-- comparison to current golden outputs
-- optional AI execution on a small controlled subset
-
----
-
-## License
-
-License/status is currently internal research prototype; formal license TBD.
+Human curator review remains authoritative.
