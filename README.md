@@ -15,6 +15,11 @@ Required local input workbooks for a fresh rerun:
 
 Generated outputs, caches, downloaded papers, AI JSONs, and curator Excel files are not committed.
 
+Detailed local input and rerun instructions:
+
+- `docs/LOCAL_INPUTS.md`
+- `docs/RERUN_VALIDATION.md`
+
 ---
 
 ## Current status
@@ -145,6 +150,8 @@ Important files:
     docs/CURATOR_GUIDE.md
     docs/DEVELOPER_GUIDE.md
     docs/GOLDEN_OUTPUTS.md
+    docs/LOCAL_INPUTS.md
+    docs/RERUN_VALIDATION.md
     docs/PIPELINE_READINESS_REPORT.md
 
 ---
@@ -236,6 +243,14 @@ List all workflow steps:
 Show one step without running it:
 
     python workflows/run_workflow_step.py --step 90
+
+Dry-run a deterministic range:
+
+    python workflows/run_workflow_step.py --continue-from 00 --through 05
+
+Execute a deterministic non-AI range:
+
+    python workflows/run_workflow_step.py --continue-from 00 --through 05 --execute
 
 Run a non-AI step:
 

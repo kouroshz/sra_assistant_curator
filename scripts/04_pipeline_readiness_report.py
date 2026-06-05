@@ -33,6 +33,8 @@ REQUIRED_DOCS = [
     "docs/ACTIVE_WORKFLOW_MAP.md",
     "docs/PRODUCTION_REORG_PLAN.md",
     "docs/GOLDEN_OUTPUTS.md",
+    "docs/LOCAL_INPUTS.md",
+    "docs/RERUN_VALIDATION.md",
 ]
 
 REQUIRED_SCRIPTS = [

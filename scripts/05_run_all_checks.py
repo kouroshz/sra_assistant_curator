@@ -40,6 +40,7 @@ PYTHON_FILES_TO_COMPILE = [
     "scripts/03_qc_final_release.py",
     "scripts/04_pipeline_readiness_report.py",
     "scripts/05_run_all_checks.py",
+    "scripts/06_rerun_readiness_check.py",
     "scripts/06_script_cleanup_inventory.py",
     "scripts/07_classify_unmapped_scripts.py",
     "scripts/36_build_paper_packet_ai_priority_queue.py",
@@ -107,6 +108,8 @@ def main():
         for item in missing_workflow_scripts:
             print("  - " + item)
         raise SystemExit(1)
+
+    run([sys.executable, "scripts/06_rerun_readiness_check.py"])
 
     dry = run([sys.executable, "workflows/run_workflow_step.py", "--step", "90"])
     if "DRY-RUN only" not in dry.stdout:
