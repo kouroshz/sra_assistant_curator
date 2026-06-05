@@ -25,6 +25,22 @@ See `docs/LOCAL_INPUTS.md` for copy and symlink examples.
 
 ## 3. Optional Cache And Paper Preparation
 
+Public metadata and paper-download steps use NCBI/E-utilities. Set a local contact email before larger reruns:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` locally:
+
+```text
+NCBI_EMAIL=you@example.org
+NCBI_TOOL=sra_paper_curator
+NCBI_API_KEY=
+```
+
+`NCBI_API_KEY` is optional. `OPENAI_API_KEY` is only needed for AI steps, and `AGENTIC_AI_ENABLE_API` should stay `0` unless intentionally running AI.
+
 Metadata caches are optional but speed up reruns:
 
 ```text
@@ -37,6 +53,27 @@ Papers are not committed. Prepare local paper PDFs/text under:
 ```text
 papers/
 ```
+
+Do not replace the `papers/` directory itself with a symlink. Keep the tracked placeholder files:
+
+```text
+papers/.gitkeep
+papers/README_PAPERS.md
+```
+
+Preferred options:
+
+1. Copy PDFs into `papers/`.
+2. Symlink individual PDF files into `papers/`.
+
+Example:
+
+```bash
+mkdir -p papers
+ln -s /absolute/path/to/paper_pdfs/*.pdf papers/
+```
+
+If testing with no papers, leave `papers/` as-is with only the placeholder files.
 
 RNA packet construction can run without PDFs, but real AI execution should wait until papers are downloaded or prepared. The deterministic priority queue records local PDF availability.
 
@@ -70,6 +107,8 @@ outputs/04_AGENTIC_AI_ASSIST/trusted_ai_queue/trusted_assay_aware_ai_queue.tsv
 ```
 
 Step 01 uses public NCBI/SRA/BioSample metadata and may use local caches. It does not call OpenAI.
+
+No-papers mode is supported through RNA Step 05. The trusted queue builds, but all packets defer because `paper_pdf_count=0`.
 
 ## 6. RNA AI Boundary
 
@@ -117,7 +156,17 @@ ChIP deterministic preparation starts at step 20:
 python workflows/run_workflow_step.py --continue-from 20 --through 32 --execute
 ```
 
-Step 28 may download open-access papers using public web/NCBI/PMC routes; it is not an OpenAI step.
+Step 28 may download open-access papers using public web/NCBI/PMC routes; it is not an OpenAI step. By default, Step 28 uses the ChIP manifest prepared by Step 27:
+
+```text
+outputs/06_CHIP_AI_ASSIST/07_papers/chip_pmids_needing_pdfs_for_downloader.tsv
+```
+
+To use a different PMID download manifest, keep the workflow wrapper and pass an explicit override:
+
+```bash
+python workflows/run_workflow_step.py --step 28 --execute --extra-args --pmids-file path/to/pmids.tsv
+```
 
 ChIP AI starts at step 33 and has the same API boundary:
 
@@ -139,7 +188,26 @@ python scripts/03_qc_final_release.py
 
 The final package excludes raw PDFs, `.env`, keys, raw AI JSONs, and bulky intermediates.
 
-## 10. Sanity Counts From Current Production State
+## 10. Finding The Final Outputs
+
+Print the current curator-facing output locations:
+
+```bash
+python scripts/90_show_curator_outputs.py
+```
+
+The expected final release paths are:
+
+```text
+results/final_curator_release/RNA/RNA_curator_review.xlsx
+results/final_curator_release/ChIP/ChIP_curator_review.xlsx
+results/final_curator_release/RNA/RNA_AI_STUDY_SUMMARIES_CLEAN.md
+results/final_curator_release/ChIP/CHIP_AI_STUDY_SUMMARIES_CLEAN.md
+```
+
+The same release folder also contains clean summary TSVs, QC reports, a manifest, and release README.
+
+## 11. Sanity Counts From Current Production State
 
 These are regression sanity checks from the current production artifacts, not biological claims:
 
@@ -155,7 +223,7 @@ Golden-output tests: 7 passing tests
 
 Counts may legitimately change after a fresh rerun if input workbooks, paper availability, or curation policy changes. Any change should be explained in the rerun notes.
 
-## 11. Final Validation Commands
+## 12. Final Validation Commands
 
 ```bash
 python scripts/05_run_all_checks.py

@@ -172,11 +172,17 @@ def main() -> None:
     env_ignored = git_check_ignore(env_file)
     api_enabled = os.environ.get("AGENTIC_AI_ENABLE_API") == "1"
     key_set = bool(os.environ.get("OPENAI_API_KEY"))
+    ncbi_email_set = bool(os.environ.get("NCBI_EMAIL") or os.environ.get("ENTREZ_EMAIL"))
+    ncbi_tool = os.environ.get("NCBI_TOOL", "")
+    ncbi_api_key_set = bool(os.environ.get("NCBI_API_KEY"))
     print(f"- {yn(env_example_ok)} .env.example present")
     print(f"- .env present locally: {'yes' if env_file_ok else 'no'}")
     print(f"- {yn(env_ignored)} .env ignored by git")
     print(f"- AGENTIC_AI_ENABLE_API == 1: {'yes' if api_enabled else 'no'}")
     print(f"- OPENAI_API_KEY set: {'yes' if key_set else 'no'}")
+    print(f"- NCBI_EMAIL or ENTREZ_EMAIL set: {'yes' if ncbi_email_set else 'no'}")
+    print(f"- NCBI_TOOL: {ncbi_tool if ncbi_tool else 'not set'}")
+    print(f"- NCBI_API_KEY set: {'yes' if ncbi_api_key_set else 'no'}")
     print("  API calls remain off unless workflow commands are explicitly run with --execute --execute-ai and API guards enabled.")
     if not env_example_ok:
         review_reasons.append(".env.example is missing")

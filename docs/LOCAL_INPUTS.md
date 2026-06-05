@@ -39,6 +39,24 @@ ln -s /path/to/plasmodium_chip_metadata_public_and_Manish_replicates_2025-03-30_
 
 Symlinks are convenient on a shared workstation, but copied files are easier to archive with a rerun record.
 
+## Optional Local Configuration
+
+Public metadata and paper-download steps use NCBI/E-utilities and should have a contact email. Add it to local `.env` or export it in the shell:
+
+```bash
+cp .env.example .env
+```
+
+Then set:
+
+```text
+NCBI_EMAIL=you@example.org
+NCBI_TOOL=sra_paper_curator
+NCBI_API_KEY=
+```
+
+`NCBI_API_KEY` is optional. `OPENAI_API_KEY` is only needed for AI-assisted steps. Keep `AGENTIC_AI_ENABLE_API=0` unless intentionally running AI.
+
 ## Local Generated Directories
 
 These directories are local/generated and are not committed:
@@ -51,7 +69,28 @@ data/sra_runinfo_cache/
 data/biosample_cache/
 ```
 
-`papers/` should contain downloaded or manually prepared paper PDFs/text before real AI-assisted curation. Deterministic packet construction can run without papers, but AI review quality depends on paper context.
+The `papers/` directory itself is tracked only as a placeholder location. Do not replace the `papers/` directory with a symlink; doing that makes Git report the tracked placeholders as deleted. Keep:
+
+```text
+papers/.gitkeep
+papers/README_PAPERS.md
+```
+
+Preferred paper-PDF setup options:
+
+1. Copy PDF files into `papers/`.
+2. Symlink individual PDF files into `papers/`.
+
+Example:
+
+```bash
+mkdir -p papers
+ln -s /absolute/path/to/paper_pdfs/*.pdf papers/
+```
+
+If testing with no papers, leave `papers/` as-is with only the placeholder files. No-papers mode is supported through RNA Step 05; the trusted queue builds, but all packets defer because `paper_pdf_count=0`.
+
+Before real AI-assisted curation, `papers/` should contain downloaded or manually prepared paper PDFs/text. AI review quality depends on paper context.
 
 ## Preflight Check
 

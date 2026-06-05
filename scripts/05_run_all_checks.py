@@ -43,10 +43,12 @@ PYTHON_FILES_TO_COMPILE = [
     "scripts/06_rerun_readiness_check.py",
     "scripts/06_script_cleanup_inventory.py",
     "scripts/07_classify_unmapped_scripts.py",
+    "scripts/15_download_open_access_pdfs.py",
     "scripts/36_build_paper_packet_ai_priority_queue.py",
     "scripts/41_batch_run_agentic_ai_on_trusted_queue.py",
     "scripts/41e_batch_run_trusted_queue_production.py",
     "scripts/62_batch_run_chip_small_packets_production.py",
+    "scripts/90_show_curator_outputs.py",
     "workflows/run_workflow_step.py",
     "tests/test_golden_outputs.py",
 ]
