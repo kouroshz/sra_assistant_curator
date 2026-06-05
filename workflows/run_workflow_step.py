@@ -18,6 +18,11 @@ import os
 import subprocess
 import sys
 
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - dependency is optional for dry-run use
+    load_dotenv = None
+
 STEP_MAP = Path("workflows/steps.tsv")
 
 AI_KEYWORDS = [
@@ -148,6 +153,9 @@ def main():
     ap.add_argument("--execute-ai", action="store_true", help="Permit AI/API execution for AI steps.")
     ap.add_argument("--extra-args", nargs=argparse.REMAINDER, help="Additional args passed to legacy script.")
     args = ap.parse_args()
+
+    if load_dotenv is not None:
+        load_dotenv(Path(".env"))
 
     rows = read_steps()
 

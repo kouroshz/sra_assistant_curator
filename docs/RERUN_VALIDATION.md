@@ -73,7 +73,15 @@ Step 01 uses public NCBI/SRA/BioSample metadata and may use local caches. It doe
 
 ## 6. RNA AI Boundary
 
-AI is optional and off by default.
+AI is optional and off by default. Deterministic reruns do not need API configuration.
+
+For real AI-assisted steps, use exported environment variables or a local `.env` copied from the safe example:
+
+```bash
+cp .env.example .env
+```
+
+Fill `OPENAI_API_KEY` locally in `.env`. `OPENAI_MODEL` and `OPENAI_SMALL_MODEL` are optional local overrides. Keep `AGENTIC_AI_ENABLE_API=0` until intentionally running API-enabled steps, then set `AGENTIC_AI_ENABLE_API=1` for that run. Never commit `.env`.
 
 RNA AI-related steps:
 
@@ -85,11 +93,11 @@ RNA AI-related steps:
 AI-capable workflow execution requires:
 
 ```bash
-AGENTIC_AI_ENABLE_API=1 OPENAI_API_KEY=... \
+AGENTIC_AI_ENABLE_API=1 \
 python workflows/run_workflow_step.py --step 07 --execute --execute-ai
 ```
 
-The workflow wrapper refuses AI-capable execution without `--execute --execute-ai` and `AGENTIC_AI_ENABLE_API=1`. Batch runners also refuse `--execute` without `OPENAI_API_KEY`. The key is never printed.
+The workflow wrapper refuses AI-capable execution without `--execute --execute-ai` and `AGENTIC_AI_ENABLE_API=1`. Batch runners also refuse `--execute` without `OPENAI_API_KEY`. The key can come from `.env` or exported shell variables and is never printed.
 
 ## 7. Post-AI Deterministic RNA Steps
 
@@ -114,7 +122,7 @@ Step 28 may download open-access papers using public web/NCBI/PMC routes; it is 
 ChIP AI starts at step 33 and has the same API boundary:
 
 ```bash
-AGENTIC_AI_ENABLE_API=1 OPENAI_API_KEY=... \
+AGENTIC_AI_ENABLE_API=1 \
 python workflows/run_workflow_step.py --step 33 --execute --execute-ai
 ```
 

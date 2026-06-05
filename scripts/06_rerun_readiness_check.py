@@ -20,6 +20,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - readiness still runs without python-dotenv
+    load_dotenv = None
+
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW_STEPS = ROOT / "workflows/steps.tsv"
@@ -58,6 +63,20 @@ def run_git(args: list[str]) -> str:
         return ""
 
 
+def git_check_ignore(path: Path) -> bool:
+    try:
+        p = subprocess.run(
+            ["git", "check-ignore", "-q", str(path.relative_to(ROOT))],
+            cwd=ROOT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        return p.returncode == 0
+    except Exception:
+        return False
+
+
 def import_available(names: list[str]) -> bool:
     return any(importlib.util.find_spec(name) is not None for name in names)
 
@@ -93,6 +112,9 @@ def yn(ok: bool) -> str:
 
 
 def main() -> None:
+    if load_dotenv is not None:
+        load_dotenv(ROOT / ".env")
+
     review_reasons = []
 
     print("# Rerun Readiness Check")
@@ -143,11 +165,23 @@ def main() -> None:
     print("")
 
     print("## API guard status")
+    env_example = ROOT / ".env.example"
+    env_file = ROOT / ".env"
+    env_example_ok = env_example.exists() and env_example.is_file()
+    env_file_ok = env_file.exists() and env_file.is_file()
+    env_ignored = git_check_ignore(env_file)
     api_enabled = os.environ.get("AGENTIC_AI_ENABLE_API") == "1"
     key_set = bool(os.environ.get("OPENAI_API_KEY"))
+    print(f"- {yn(env_example_ok)} .env.example present")
+    print(f"- .env present locally: {'yes' if env_file_ok else 'no'}")
+    print(f"- {yn(env_ignored)} .env ignored by git")
     print(f"- AGENTIC_AI_ENABLE_API == 1: {'yes' if api_enabled else 'no'}")
     print(f"- OPENAI_API_KEY set: {'yes' if key_set else 'no'}")
     print("  API calls remain off unless workflow commands are explicitly run with --execute --execute-ai and API guards enabled.")
+    if not env_example_ok:
+        review_reasons.append(".env.example is missing")
+    if not env_ignored:
+        review_reasons.append(".env is not ignored by git")
     print("")
 
     print("## Workflow map")

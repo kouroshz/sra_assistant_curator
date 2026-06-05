@@ -269,6 +269,28 @@ Batch AI runners also require `OPENAI_API_KEY` when `--execute` is used. The key
 
 ---
 
+## Optional API configuration
+
+Deterministic reruns do not need OpenAI API access.
+
+Real AI-assisted steps require either exported environment variables or a local `.env` file that is never committed:
+
+    cp .env.example .env
+
+Then edit `.env` locally:
+
+    OPENAI_API_KEY=your-local-key
+    OPENAI_MODEL=optional-model
+    OPENAI_SMALL_MODEL=optional-small-model
+
+Keep API execution disabled until you intentionally run an AI step:
+
+    AGENTIC_AI_ENABLE_API=0
+
+Set `AGENTIC_AI_ENABLE_API=1` only for deliberate API-enabled runs. Never commit `.env`.
+
+---
+
 ## AI/API safety model
 
 Default behavior is safe:
