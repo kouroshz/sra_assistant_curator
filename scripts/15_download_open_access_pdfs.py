@@ -4,12 +4,18 @@ from pathlib import Path
 import argparse
 import csv
 import json
+import os
 import re
 import time
 import urllib.parse
 import urllib.request
 import urllib.error
 import xml.etree.ElementTree as ET
+
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - dotenv is optional for shell-configured runs
+    load_dotenv = None
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "outputs"
@@ -18,6 +24,11 @@ PAPERS.mkdir(exist_ok=True)
 
 
 USER_AGENT = "sra_paper_curator/0.1 (academic metadata curation; contact email provided)"
+DEFAULT_NCBI_TOOL = "sra_paper_curator"
+PMID_MANIFEST_CANDIDATES = [
+    OUT / "06_CHIP_AI_ASSIST/07_papers/chip_pmids_needing_pdfs_for_downloader.tsv",
+    OUT / "pmids_needing_pdfs.tsv",
+]
 
 
 def clean(x):
@@ -94,14 +105,16 @@ def try_download_pdf(url, outpath):
         return False, f"{type(e).__name__}: {e}", url
 
 
-def pubmed_metadata(pmid, email):
+def pubmed_metadata(pmid, email, tool=DEFAULT_NCBI_TOOL, api_key=""):
     params = {
         "db": "pubmed",
         "id": pmid,
         "retmode": "xml",
-        "tool": "sra_paper_curator",
+        "tool": tool or DEFAULT_NCBI_TOOL,
         "email": email,
     }
+    if api_key:
+        params["api_key"] = api_key
     url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?" + urllib.parse.urlencode(params)
     data, _, _ = http_get(url)
 
@@ -370,16 +383,47 @@ def unique_candidates(cands):
     return out
 
 
+def resolve_email(cli_email):
+    email = clean(cli_email) or clean(os.getenv("NCBI_EMAIL")) or clean(os.getenv("ENTREZ_EMAIL"))
+    if not email:
+        raise SystemExit("Provide --email or set NCBI_EMAIL in .env/shell.")
+    return email
+
+
+def resolve_pmids_file(cli_path):
+    if clean(cli_path):
+        path = Path(cli_path)
+        return path if path.is_absolute() else ROOT / path
+
+    for path in PMID_MANIFEST_CANDIDATES:
+        if path.exists():
+            return path
+
+    raise SystemExit(
+        "No PMID download manifest found. Provide --pmids-file or run the appropriate paper-download preparation step."
+    )
+
+
 def main():
+    if load_dotenv is not None:
+        load_dotenv(ROOT / ".env")
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pmids-file", default=str(OUT / "pmids_needing_pdfs.tsv"))
-    parser.add_argument("--email", required=True)
+    parser.add_argument("--pmids-file", default="")
+    parser.add_argument("--email", default="")
+    parser.add_argument("--tool", default="")
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--sleep", type=float, default=1.0)
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
 
-    pmid_rows = read_pmids(args.pmids_file)
+    email = resolve_email(args.email)
+    ncbi_tool = clean(args.tool) or clean(os.getenv("NCBI_TOOL")) or DEFAULT_NCBI_TOOL
+    ncbi_api_key = clean(os.getenv("NCBI_API_KEY"))
+    pmids_file = resolve_pmids_file(args.pmids_file)
+    print(f"Using PMID manifest: {pmids_file}")
+
+    pmid_rows = read_pmids(pmids_file)
     if args.limit and args.limit > 0:
         pmid_rows = pmid_rows[: args.limit]
 
@@ -405,7 +449,7 @@ def main():
             continue
 
         try:
-            meta = pubmed_metadata(pmid, args.email)
+            meta = pubmed_metadata(pmid, email, tool=ncbi_tool, api_key=ncbi_api_key)
         except Exception as e:
             msg = f"pubmed_metadata_failed: {type(e).__name__}: {e}"
             print(f"  {msg}")
@@ -426,12 +470,12 @@ def main():
         out_pdf = PAPERS / f"{pmid}_{title_stub}.pdf"
 
         candidates = []
-        candidates.extend(europepmc_pdf_urls(pmid, args.email))
+        candidates.extend(europepmc_pdf_urls(pmid, email))
         candidates.extend(europepmc_render_urls(meta.get("pmcid", "")))
         candidates.extend(pmc_oa_api_pdf_urls(meta.get("pmcid", "")))
         candidates.extend(pmc_heuristic_urls(meta.get("pmcid", "")))
-        candidates.extend(unpaywall_pdf_urls(meta.get("doi", ""), args.email))
-        candidates.extend(openalex_pdf_urls(meta.get("doi", ""), args.email))
+        candidates.extend(unpaywall_pdf_urls(meta.get("doi", ""), email))
+        candidates.extend(openalex_pdf_urls(meta.get("doi", ""), email))
         candidates.extend(publisher_pdf_urls(meta.get("doi", ""), pmid))
         candidates = unique_candidates(candidates)
 

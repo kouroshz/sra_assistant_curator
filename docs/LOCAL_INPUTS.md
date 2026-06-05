@@ -39,6 +39,24 @@ ln -s /path/to/plasmodium_chip_metadata_public_and_Manish_replicates_2025-03-30_
 
 Symlinks are convenient on a shared workstation, but copied files are easier to archive with a rerun record.
 
+## Optional Local Configuration
+
+Public metadata and paper-download steps use NCBI/E-utilities and should have a contact email. Add it to local `.env` or export it in the shell:
+
+```bash
+cp .env.example .env
+```
+
+Then set:
+
+```text
+NCBI_EMAIL=you@example.org
+NCBI_TOOL=sra_paper_curator
+NCBI_API_KEY=
+```
+
+`NCBI_API_KEY` is optional. `OPENAI_API_KEY` is only needed for AI-assisted steps. Keep `AGENTIC_AI_ENABLE_API=0` unless intentionally running AI.
+
 ## Local Generated Directories
 
 These directories are local/generated and are not committed:

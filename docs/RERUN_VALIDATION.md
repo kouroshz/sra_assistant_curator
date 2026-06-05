@@ -25,6 +25,22 @@ See `docs/LOCAL_INPUTS.md` for copy and symlink examples.
 
 ## 3. Optional Cache And Paper Preparation
 
+Public metadata and paper-download steps use NCBI/E-utilities. Set a local contact email before larger reruns:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` locally:
+
+```text
+NCBI_EMAIL=you@example.org
+NCBI_TOOL=sra_paper_curator
+NCBI_API_KEY=
+```
+
+`NCBI_API_KEY` is optional. `OPENAI_API_KEY` is only needed for AI steps, and `AGENTIC_AI_ENABLE_API` should stay `0` unless intentionally running AI.
+
 Metadata caches are optional but speed up reruns:
 
 ```text
@@ -140,7 +156,17 @@ ChIP deterministic preparation starts at step 20:
 python workflows/run_workflow_step.py --continue-from 20 --through 32 --execute
 ```
 
-Step 28 may download open-access papers using public web/NCBI/PMC routes; it is not an OpenAI step.
+Step 28 may download open-access papers using public web/NCBI/PMC routes; it is not an OpenAI step. By default, Step 28 uses the ChIP manifest prepared by Step 27:
+
+```text
+outputs/06_CHIP_AI_ASSIST/07_papers/chip_pmids_needing_pdfs_for_downloader.tsv
+```
+
+To use a different PMID download manifest, keep the workflow wrapper and pass an explicit override:
+
+```bash
+python workflows/run_workflow_step.py --step 28 --execute --extra-args --pmids-file path/to/pmids.tsv
+```
 
 ChIP AI starts at step 33 and has the same API boundary:
 
