@@ -115,6 +115,20 @@ def main():
             print("  - " + item)
         raise SystemExit(1)
 
+    run([
+        sys.executable,
+        "-c",
+        (
+            "from pathlib import Path; "
+            "import importlib.util; "
+            "spec=importlib.util.spec_from_file_location('dl','scripts/15_download_open_access_pdfs.py'); "
+            "m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m); "
+            "status, missing=m.output_paths_for_manifest(m.CHIP_PMID_MANIFEST); "
+            "assert str(status).endswith('outputs/06_CHIP_AI_ASSIST/07_papers/chip_pdf_download_status.tsv'); "
+            "assert str(missing).endswith('outputs/06_CHIP_AI_ASSIST/07_papers/chip_pmids_still_needing_manual_pdf_download.tsv')"
+        ),
+    ])
+
     run([sys.executable, "scripts/06_rerun_readiness_check.py"])
 
     dry = run([sys.executable, "workflows/run_workflow_step.py", "--step", "90"])

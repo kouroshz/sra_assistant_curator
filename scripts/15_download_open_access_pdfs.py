@@ -25,8 +25,10 @@ PAPERS.mkdir(exist_ok=True)
 
 USER_AGENT = "sra_paper_curator/0.1 (academic metadata curation; contact email provided)"
 DEFAULT_NCBI_TOOL = "sra_paper_curator"
+CHIP_PAPER_DIR = OUT / "06_CHIP_AI_ASSIST/07_papers"
+CHIP_PMID_MANIFEST = CHIP_PAPER_DIR / "chip_pmids_needing_pdfs_for_downloader.tsv"
 PMID_MANIFEST_CANDIDATES = [
-    OUT / "06_CHIP_AI_ASSIST/07_papers/chip_pmids_needing_pdfs_for_downloader.tsv",
+    CHIP_PMID_MANIFEST,
     OUT / "pmids_needing_pdfs.tsv",
 ]
 
@@ -404,6 +406,19 @@ def resolve_pmids_file(cli_path):
     )
 
 
+def output_paths_for_manifest(pmids_file):
+    pmids_file = Path(pmids_file).resolve()
+    if pmids_file == CHIP_PMID_MANIFEST.resolve():
+        return (
+            CHIP_PAPER_DIR / "chip_pdf_download_status.tsv",
+            CHIP_PAPER_DIR / "chip_pmids_still_needing_manual_pdf_download.tsv",
+        )
+    return (
+        OUT / "pdf_download_status.tsv",
+        OUT / "pmids_still_needing_manual_pdf_download.tsv",
+    )
+
+
 def main():
     if load_dotenv is not None:
         load_dotenv(ROOT / ".env")
@@ -421,7 +436,10 @@ def main():
     ncbi_tool = clean(args.tool) or clean(os.getenv("NCBI_TOOL")) or DEFAULT_NCBI_TOOL
     ncbi_api_key = clean(os.getenv("NCBI_API_KEY"))
     pmids_file = resolve_pmids_file(args.pmids_file)
+    status_file, remaining_file = output_paths_for_manifest(pmids_file)
     print(f"Using PMID manifest: {pmids_file}")
+    print(f"Download status output: {status_file}")
+    print(f"Manual-needed output: {remaining_file}")
 
     pmid_rows = read_pmids(pmids_file)
     if args.limit and args.limit > 0:
@@ -522,8 +540,8 @@ def main():
 
         time.sleep(args.sleep)
 
-    status_file = OUT / "pdf_download_status.tsv"
-    remaining_file = OUT / "pmids_still_needing_manual_pdf_download.tsv"
+    status_file.parent.mkdir(parents=True, exist_ok=True)
+    remaining_file.parent.mkdir(parents=True, exist_ok=True)
 
     with open(status_file, "w", newline="") as f:
         writer = csv.DictWriter(

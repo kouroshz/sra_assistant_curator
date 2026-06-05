@@ -183,11 +183,20 @@ Step 28 may download open-access papers using public web/NCBI/PMC routes; it is 
 outputs/06_CHIP_AI_ASSIST/07_papers/chip_pmids_needing_pdfs_for_downloader.tsv
 ```
 
+With that manifest, Step 28 writes the ChIP-specific files consumed by Step 29:
+
+```text
+outputs/06_CHIP_AI_ASSIST/07_papers/chip_pdf_download_status.tsv
+outputs/06_CHIP_AI_ASSIST/07_papers/chip_pmids_still_needing_manual_pdf_download.tsv
+```
+
 To use a different PMID download manifest, keep the workflow wrapper and pass an explicit override:
 
 ```bash
 python workflows/run_workflow_step.py --step 28 --execute --extra-args --pmids-file path/to/pmids.tsv
 ```
+
+`no_open_access_pdf_found` is not fatal. It is recorded as missing/manual paper status and carried forward into paper availability review. Groups with no PMID or unresolved publication remain held or excluded from AI-ready queues so paper-aware AI is limited to publication-linked data.
 
 ChIP AI starts at step 33 and has the same API boundary:
 
