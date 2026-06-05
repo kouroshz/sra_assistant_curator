@@ -1,13 +1,13 @@
 # Pipeline Readiness Report
 
-Generated: 2026-06-04T20:03:58
+Generated: 2026-06-04T20:12:01
 
 This report summarizes whether the current branch is ready for controlled use and further refactoring.
 
 ## Git state
 
-- branch: `docs-publication-readme`
-- latest commit: `d81baba Polish README and reviewer-facing workflow docs`
+- branch: `main`
+- latest commit: `b6a8299 Merge pull request #2 from kouroshz/docs-publication-readme`
 - working tree: clean
 
 ## Required tracked files
@@ -70,7 +70,7 @@ Test output excerpt:
     test_workflow_runner_dry_run_default (__main__.TestGoldenOutputs.test_workflow_runner_dry_run_default) ... ok
     
     ----------------------------------------------------------------------
-    Ran 7 tests in 0.218s
+    Ran 7 tests in 0.217s
     
     OK
 
@@ -83,7 +83,7 @@ Test output excerpt:
 
 - PASS latest release pointer exists: `results/LATEST_FINAL_CURATOR_RELEASE.txt`
   - `results/final_curator_release`
-  - `results/final_curator_release_20260604_200358.zip`
+  - `results/final_curator_release_20260604_201202.zip`
 
 ## Remaining technical debt
 
