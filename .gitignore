@@ -11,6 +11,7 @@ __pycache__/
 *.pyo
 .ipynb_checkpoints/
 .env
+!.env.example
 *.key
 
 # Generated outputs: keep folder skeleton + README only
@@ -58,6 +59,7 @@ scripts/prototype_old/
 # Local secrets
 .env
 *.env
+!.env.example
 
 # Generated / bulky outputs
 outputs/

@@ -18,6 +18,8 @@ Inputs:
 Outputs:
   outputs/02_QC_SUMMARIES/publication_resolution_by_packet.tsv
   outputs/02_QC_SUMMARIES/publication_resolution_summary.tsv
+  outputs/02_QC_SUMMARIES/trusted_pmid_packets.tsv
+  outputs/02_QC_SUMMARIES/held_or_unresolved_pmid_packets.tsv
 """
 
 from __future__ import annotations
@@ -44,6 +46,8 @@ DEFAULT_EVIDENCE = Path("outputs/01_CURRENT_DRAFT_TABLES/rowwise_public_metadata
 DEFAULT_PAPERS_DIR = Path("papers")
 DEFAULT_OUT = Path("outputs/02_QC_SUMMARIES/publication_resolution_by_packet.tsv")
 DEFAULT_SUMMARY = Path("outputs/02_QC_SUMMARIES/publication_resolution_summary.tsv")
+DEFAULT_TRUSTED = Path("outputs/02_QC_SUMMARIES/trusted_pmid_packets.tsv")
+DEFAULT_HELD = Path("outputs/02_QC_SUMMARIES/held_or_unresolved_pmid_packets.tsv")
 
 
 def clean(x) -> str:
@@ -203,6 +207,8 @@ def main() -> None:
     parser.add_argument("--papers-dir", type=Path, default=DEFAULT_PAPERS_DIR)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--summary", type=Path, default=DEFAULT_SUMMARY)
+    parser.add_argument("--trusted-out", type=Path, default=DEFAULT_TRUSTED)
+    parser.add_argument("--held-out", type=Path, default=DEFAULT_HELD)
     parser.add_argument("--sleep", type=float, default=0.5)
     parser.add_argument("--only-nopmid", action="store_true", default=True)
     args = parser.parse_args()
@@ -211,6 +217,8 @@ def main() -> None:
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.summary.parent.mkdir(parents=True, exist_ok=True)
+    args.trusted_out.parent.mkdir(parents=True, exist_ok=True)
+    args.held_out.parent.mkdir(parents=True, exist_ok=True)
 
     idx = pd.read_csv(args.packet_index, sep="\t", dtype=str).fillna("")
     evidence = pd.read_csv(args.evidence, sep="\t", dtype=str).fillna("")
@@ -342,6 +350,21 @@ def main() -> None:
     out = pd.DataFrame(rows)
     out.to_csv(args.out, sep="\t", index=False)
 
+    trusted_statuses = {
+        "already_has_master_pmid",
+        "resolved_to_single_pmid",
+    }
+    trusted_mask = (
+        out["publication_resolution_status"].isin(trusted_statuses)
+        & (out["resolved_confidence"] == "high")
+        & out["resolved_pmid"].map(clean).astype(bool)
+    )
+    trusted = out[trusted_mask].copy()
+    held = out[~trusted_mask].copy()
+
+    trusted.to_csv(args.trusted_out, sep="\t", index=False)
+    held.to_csv(args.held_out, sep="\t", index=False)
+
     summary = []
     summary.append({"metric": "n_packets", "value": len(out)})
     for col in ["publication_resolution_status", "resolved_confidence", "resolved_source"]:
@@ -352,12 +375,18 @@ def main() -> None:
     summary.append({"metric": "n_packets_with_resolved_pmid", "value": int(out["resolved_pmid"].map(clean).astype(bool).sum())})
     summary.append({"metric": "n_packets_with_candidate_pmids", "value": int(out["candidate_pmids"].map(clean).astype(bool).sum())})
     summary.append({"metric": "n_packets_with_geo_tokens", "value": int(out["candidate_geo_tokens"].map(clean).astype(bool).sum())})
+    summary.append({"metric": "n_trusted_pmid_packets", "value": len(trusted)})
+    summary.append({"metric": "n_held_or_unresolved_pmid_packets", "value": len(held)})
     summary.append({"metric": "output_table", "value": str(args.out)})
+    summary.append({"metric": "trusted_packets_table", "value": str(args.trusted_out)})
+    summary.append({"metric": "held_or_unresolved_packets_table", "value": str(args.held_out)})
 
     summary_df = pd.DataFrame(summary)
     summary_df.to_csv(args.summary, sep="\t", index=False)
 
     print(f"Wrote publication resolution table: {args.out}")
+    print(f"Wrote trusted PMID packets table: {args.trusted_out}")
+    print(f"Wrote held/unresolved PMID packets table: {args.held_out}")
     print(f"Wrote summary: {args.summary}")
     print(summary_df.to_string(index=False))
 

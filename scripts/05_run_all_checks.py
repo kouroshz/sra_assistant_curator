@@ -17,6 +17,7 @@ No OpenAI key required.
 
 from pathlib import Path
 import argparse
+import csv
 import os
 import subprocess
 import sys
@@ -39,8 +40,13 @@ PYTHON_FILES_TO_COMPILE = [
     "scripts/03_qc_final_release.py",
     "scripts/04_pipeline_readiness_report.py",
     "scripts/05_run_all_checks.py",
+    "scripts/06_rerun_readiness_check.py",
     "scripts/06_script_cleanup_inventory.py",
     "scripts/07_classify_unmapped_scripts.py",
+    "scripts/36_build_paper_packet_ai_priority_queue.py",
+    "scripts/41_batch_run_agentic_ai_on_trusted_queue.py",
+    "scripts/41e_batch_run_trusted_queue_production.py",
+    "scripts/62_batch_run_chip_small_packets_production.py",
     "workflows/run_workflow_step.py",
     "tests/test_golden_outputs.py",
 ]
@@ -92,6 +98,21 @@ def main():
     print("# Running SRA curator production checks")
 
     run([sys.executable, "-m", "py_compile"] + PYTHON_FILES_TO_COMPILE)
+
+    missing_workflow_scripts = []
+    with open(ROOT / "workflows/steps.tsv", newline="") as f:
+        for row in csv.DictReader(f, delimiter="\t"):
+            script = row.get("script", "")
+            if script and not (ROOT / script).exists():
+                missing_workflow_scripts.append(f"step {row.get('step', '')}: {script}")
+    if missing_workflow_scripts:
+        print("")
+        print("FAILED: workflow map references missing scripts.")
+        for item in missing_workflow_scripts:
+            print("  - " + item)
+        raise SystemExit(1)
+
+    run([sys.executable, "scripts/06_rerun_readiness_check.py"])
 
     dry = run([sys.executable, "workflows/run_workflow_step.py", "--step", "90"])
     if "DRY-RUN only" not in dry.stdout:

@@ -1,51 +1,64 @@
 # Local Inputs
 
-This repo is code-first. Large or copyrighted files are not stored in Git.
+This repository intentionally does not commit raw curator input workbooks, generated outputs, downloaded papers, metadata caches, AI JSONs, or final curator Excel files.
 
-## Required local files
+## Required Workbooks
 
-### Master workbook
+Place these files exactly at the following paths before a full fresh rerun:
 
-Put here:
+```text
+data/rna_seq_metadata_2026-05-05_original.xlsx
+data/plasmodium_chip_metadata_public_and_Manish_replicates_2025-03-30_V10.xlsx
+```
 
-    data/rna_seq_metadata_2026-05-05_original.xlsx
+These are the local source workbooks used by the RNA and ChIP branches of the workflow. The pipeline creates derived TSVs and curator workbooks from them; do not edit the original workbooks as part of the pipeline.
 
-### Paper PDFs
+## Optional Reference Files
 
-Put here:
+If you have local gold-standard or review-reference workbooks from prior curator rounds, keep them in `data/` or a local-only folder and document their provenance in your lab notes. They are useful for manual comparison, but they are not required for the deterministic rerun path described in `docs/RERUN_VALIDATION.md`.
 
-    papers/
+Do not commit reference workbooks unless the team has explicitly decided they are safe, licensed, and small enough for the repository.
 
-Use filenames beginning with PMID when possible:
+## Copy Or Symlink Inputs
 
-    <PMID>_<short_title>.pdf
+Copy:
 
-## Optional caches
+```bash
+mkdir -p data
+cp /path/to/rna_seq_metadata_2026-05-05_original.xlsx data/
+cp /path/to/plasmodium_chip_metadata_public_and_Manish_replicates_2025-03-30_V10.xlsx data/
+```
 
-These folders are generated automatically or shared locally:
+Symlink:
 
-    data/biosample_cache/
-    data/sra_runinfo_cache/
-    data/geo_cache/
+```bash
+mkdir -p data
+ln -s /path/to/rna_seq_metadata_2026-05-05_original.xlsx data/rna_seq_metadata_2026-05-05_original.xlsx
+ln -s /path/to/plasmodium_chip_metadata_public_and_Manish_replicates_2025-03-30_V10.xlsx data/plasmodium_chip_metadata_public_and_Manish_replicates_2025-03-30_V10.xlsx
+```
 
-They are not required to clone the repo, but they make reruns faster.
+Symlinks are convenient on a shared workstation, but copied files are easier to archive with a rerun record.
 
-## Sharing with team members
+## Local Generated Directories
 
-Recommended approach:
+These directories are local/generated and are not committed:
 
-1. Share the GitHub repo for code and documentation.
-2. Share the master workbook separately.
-3. Share PDFs separately, or let users run the open-access downloader.
-4. Keep generated outputs local unless intentionally sharing a curator package.
+```text
+outputs/
+results/
+papers/
+data/sra_runinfo_cache/
+data/biosample_cache/
+```
 
-## Open-access PDF downloader
+`papers/` should contain downloaded or manually prepared paper PDFs/text before real AI-assisted curation. Deterministic packet construction can run without papers, but AI review quality depends on paper context.
 
-Run after PMID/PDF status files exist:
+## Preflight Check
 
-    python scripts/15_download_open_access_pdfs.py \
-      --pmids-file outputs/pmids_needing_pdfs.tsv \
-      --email YOUR_EMAIL_HERE \
-      --sleep 1.0
+Run:
 
-Manually download any remaining PDFs and place them in papers/.
+```bash
+python scripts/06_rerun_readiness_check.py
+```
+
+The script reports input workbook presence, cache and paper counts, Python import availability, workflow map status, and API guard state without printing secrets or writing outputs.

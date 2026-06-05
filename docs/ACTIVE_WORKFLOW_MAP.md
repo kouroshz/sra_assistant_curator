@@ -13,6 +13,9 @@ Important: this is a map of the current working workflow, not the final desired 
 - Deterministic validators and repairs are separate from AI.
 - AI suggestions are curator aids only; curator-final columns are authoritative.
 - Final products should be collected into one release folder and zip.
+- Required local fresh-rerun inputs are `data/rna_seq_metadata_2026-05-05_original.xlsx` and `data/plasmodium_chip_metadata_public_and_Manish_replicates_2025-03-30_V10.xlsx`.
+- `papers/` is local/generated and not committed; prepare or download papers before real AI execution.
+- RNA publication resolution generates `trusted_pmid_packets.tsv` and `held_or_unresolved_pmid_packets.tsv`; RNA packet triage generates `paper_packet_ai_priority_queue.tsv`.
 
 ## Active scripts by step
 
@@ -65,13 +68,22 @@ Important: this is a map of the current working workflow, not the final desired 
 - Main inputs: paper packets; BioProject/PMID metadata
 - Main outputs: trusted PMID packet tables and unresolved/held tables
 
+#### Step 04b: `05b_build_paper_packet_ai_priority_queue.py`
+
+- Current script: `scripts/36_build_paper_packet_ai_priority_queue.py`
+- API status: no
+- Current status: active_for_RNA_ai_queue
+- Purpose: Build deterministic paper-packet AI priority queue with PDF availability, ambiguity, and single-cell/well triage signals.
+- Main inputs: paper packet index; optional rowwise metadata; papers directory
+- Main outputs: `outputs/04_AGENTIC_AI_ASSIST/paper_packets/paper_packet_ai_priority_queue.tsv`
+
 #### Step 05: `06_make_ai_queue.py`
 
 - Current script: `scripts/38_make_trusted_assay_aware_ai_queue.py`
 - API status: no
 - Current status: active_for_RNA_ai_queue
 - Purpose: Build trusted assay-aware AI queue; exclude or hold unsafe/no-PMID packets.
-- Main inputs: trusted PMID packets; rowwise metadata
+- Main inputs: trusted PMID packets; paper packet AI priority queue; rowwise metadata
 - Main outputs: AI priority queue
 
 ### shared/RNA/ChIP

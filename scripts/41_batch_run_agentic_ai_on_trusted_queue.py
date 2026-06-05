@@ -42,6 +42,11 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - dependency is optional for dry-run use
+    load_dotenv = None
+
 
 DEFAULT_QUEUE_CANDIDATES = [
     "outputs/04_AGENTIC_AI_ASSIST/trusted_ai_queue/trusted_assay_aware_ai_queue.tsv",
@@ -397,6 +402,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = build_parser().parse_args(argv)
     root = find_repo_root()
+    if load_dotenv is not None:
+        load_dotenv(root / ".env")
 
     queue_path = Path(args.queue) if args.queue else first_existing_path(root, DEFAULT_QUEUE_CANDIDATES)
     if not queue_path.is_absolute():
@@ -410,6 +417,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         include_actions=include_actions,
         limit=args.limit,
     )
+
+    if args.execute:
+        if os.environ.get("AGENTIC_AI_ENABLE_API", "") != "1":
+            raise SystemExit("Refusing --execute: AGENTIC_AI_ENABLE_API must be set to 1 before any batch output or API runner launch.")
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise SystemExit("Refusing --execute: OPENAI_API_KEY is not set. The key value was not printed.")
 
     stamp = now_stamp()
     batch_dir = root / Path(args.batch_dir) / stamp
@@ -434,9 +447,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(f"Selected packets: {len(selected)}")
     print(f"Batch dir: {safe_rel(root, batch_dir)}")
     print(f"Mode: {'EXECUTE' if args.execute else 'DRY-RUN'}")
-
-    if args.execute and os.environ.get("AGENTIC_AI_ENABLE_API", "") != "1":
-        print("WARNING: AGENTIC_AI_ENABLE_API is not set to 1. Script 39 may refuse to call the API.", file=sys.stderr)
 
     summary_rows: List[Dict[str, Any]] = []
     n_bad = 0

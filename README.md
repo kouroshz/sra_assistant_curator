@@ -8,6 +8,18 @@ Core principle:
 
 AI may assist paper and metadata interpretation, but deterministic validation, audit trails, and human curator review remain authoritative.
 
+Required local input workbooks for a fresh rerun:
+
+    data/rna_seq_metadata_2026-05-05_original.xlsx
+    data/plasmodium_chip_metadata_public_and_Manish_replicates_2025-03-30_V10.xlsx
+
+Generated outputs, caches, downloaded papers, AI JSONs, and curator Excel files are not committed.
+
+Detailed local input and rerun instructions:
+
+- `docs/LOCAL_INPUTS.md`
+- `docs/RERUN_VALIDATION.md`
+
 ---
 
 ## Current status
@@ -50,6 +62,7 @@ The environment is defined in environment.yml and currently includes:
     python=3.11
     pandas
     openpyxl
+    xlsxwriter
     numpy
     pyyaml
     tqdm
@@ -137,6 +150,8 @@ Important files:
     docs/CURATOR_GUIDE.md
     docs/DEVELOPER_GUIDE.md
     docs/GOLDEN_OUTPUTS.md
+    docs/LOCAL_INPUTS.md
+    docs/RERUN_VALIDATION.md
     docs/PIPELINE_READINESS_REPORT.md
 
 ---
@@ -163,9 +178,19 @@ Rows are grouped into paper/BioProject review units.
 Core actions:
 
 - resolve PMID/BioProject links
+- write trusted and held publication packet tables
+- build deterministic paper-packet priority queue
 - identify paper availability
 - build paper/BioProject packets
 - prepare packet-level metadata and sidecar rowwise evidence
+
+Key generated products:
+
+    outputs/02_QC_SUMMARIES/trusted_pmid_packets.tsv
+    outputs/02_QC_SUMMARIES/held_or_unresolved_pmid_packets.tsv
+    outputs/04_AGENTIC_AI_ASSIST/paper_packets/paper_packet_ai_priority_queue.tsv
+
+`papers/` is a local working directory and is not committed. Paper packets can be built before PDFs are available, but real AI-assisted curation should only be run after papers/PDF text are downloaded or otherwise prepared; otherwise the queue and downstream checks should report missing local paper context.
 
 ### 3. Optional AI-assisted curation
 
@@ -219,6 +244,14 @@ Show one step without running it:
 
     python workflows/run_workflow_step.py --step 90
 
+Dry-run a deterministic range:
+
+    python workflows/run_workflow_step.py --continue-from 00 --through 05
+
+Execute a deterministic non-AI range:
+
+    python workflows/run_workflow_step.py --continue-from 00 --through 05 --execute
+
 Run a non-AI step:
 
     python workflows/run_workflow_step.py --step 90 --execute
@@ -231,6 +264,30 @@ The wrapper refuses AI-capable execution unless both are present:
 
     --execute-ai
     AGENTIC_AI_ENABLE_API=1
+
+Batch AI runners also require `OPENAI_API_KEY` when `--execute` is used. The key is never printed.
+
+---
+
+## Optional API configuration
+
+Deterministic reruns do not need OpenAI API access.
+
+Real AI-assisted steps require either exported environment variables or a local `.env` file that is never committed:
+
+    cp .env.example .env
+
+Then edit `.env` locally:
+
+    OPENAI_API_KEY=your-local-key
+    OPENAI_MODEL=optional-model
+    OPENAI_SMALL_MODEL=optional-small-model
+
+Keep API execution disabled until you intentionally run an AI step:
+
+    AGENTIC_AI_ENABLE_API=0
+
+Set `AGENTIC_AI_ENABLE_API=1` only for deliberate API-enabled runs. Never commit `.env`.
 
 ---
 

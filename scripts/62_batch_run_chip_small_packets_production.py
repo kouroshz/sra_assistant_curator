@@ -19,9 +19,15 @@ from __future__ import annotations
 from pathlib import Path
 from datetime import datetime
 import argparse
+import os
 import subprocess
 import sys
 import pandas as pd
+
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - dependency is optional for dry-run use
+    load_dotenv = None
 
 
 QUEUE = Path("outputs/06_CHIP_AI_ASSIST/09_chip_ai_packets/chip_ai_packet_queue.tsv")
@@ -77,6 +83,15 @@ def main():
     ap.add_argument("--max-rowwise-rows", type=int, default=250)
     ap.add_argument("--max-rowwise-chars", type=int, default=100000)
     args = ap.parse_args()
+
+    if load_dotenv is not None:
+        load_dotenv(Path(".env"))
+
+    if args.execute:
+        if os.environ.get("AGENTIC_AI_ENABLE_API") != "1":
+            raise SystemExit("Refusing --execute: AGENTIC_AI_ENABLE_API must be set to 1 before any batch output or API runner launch.")
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise SystemExit("Refusing --execute: OPENAI_API_KEY is not set. The key value was not printed.")
 
     queue_path = Path(args.queue)
     inventory_path = Path(args.inventory)
