@@ -51,7 +51,28 @@ data/sra_runinfo_cache/
 data/biosample_cache/
 ```
 
-`papers/` should contain downloaded or manually prepared paper PDFs/text before real AI-assisted curation. Deterministic packet construction can run without papers, but AI review quality depends on paper context.
+The `papers/` directory itself is tracked only as a placeholder location. Do not replace the `papers/` directory with a symlink; doing that makes Git report the tracked placeholders as deleted. Keep:
+
+```text
+papers/.gitkeep
+papers/README_PAPERS.md
+```
+
+Preferred paper-PDF setup options:
+
+1. Copy PDF files into `papers/`.
+2. Symlink individual PDF files into `papers/`.
+
+Example:
+
+```bash
+mkdir -p papers
+ln -s /absolute/path/to/paper_pdfs/*.pdf papers/
+```
+
+If testing with no papers, leave `papers/` as-is with only the placeholder files. No-papers mode is supported through RNA Step 05; the trusted queue builds, but all packets defer because `paper_pdf_count=0`.
+
+Before real AI-assisted curation, `papers/` should contain downloaded or manually prepared paper PDFs/text. AI review quality depends on paper context.
 
 ## Preflight Check
 

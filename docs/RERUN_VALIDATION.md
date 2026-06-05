@@ -38,6 +38,27 @@ Papers are not committed. Prepare local paper PDFs/text under:
 papers/
 ```
 
+Do not replace the `papers/` directory itself with a symlink. Keep the tracked placeholder files:
+
+```text
+papers/.gitkeep
+papers/README_PAPERS.md
+```
+
+Preferred options:
+
+1. Copy PDFs into `papers/`.
+2. Symlink individual PDF files into `papers/`.
+
+Example:
+
+```bash
+mkdir -p papers
+ln -s /absolute/path/to/paper_pdfs/*.pdf papers/
+```
+
+If testing with no papers, leave `papers/` as-is with only the placeholder files.
+
 RNA packet construction can run without PDFs, but real AI execution should wait until papers are downloaded or prepared. The deterministic priority queue records local PDF availability.
 
 ## 4. Inspect Workflow Steps
@@ -70,6 +91,8 @@ outputs/04_AGENTIC_AI_ASSIST/trusted_ai_queue/trusted_assay_aware_ai_queue.tsv
 ```
 
 Step 01 uses public NCBI/SRA/BioSample metadata and may use local caches. It does not call OpenAI.
+
+No-papers mode is supported through RNA Step 05. The trusted queue builds, but all packets defer because `paper_pdf_count=0`.
 
 ## 6. RNA AI Boundary
 
