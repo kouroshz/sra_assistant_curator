@@ -1,48 +1,49 @@
 # Developer Guide
 
-This repository currently contains a working legacy RNA/ChIP curator-assist pipeline plus a production-facing wrapper layer.
+This guide explains how to work on the SRA Paper Curator repository without breaking the current production workflow.
 
-## Current development principle
+---
 
-Do not break the working legacy pipeline.
+## Core development rule
 
-Refactoring should proceed in small steps:
+Do not break the working pipeline.
 
-1. Add or move shared helper logic into `src/sra_paper_curator/`.
-2. Update only production-layer scripts first.
-3. Run the full check suite.
-4. Commit only after tests pass.
-5. Move legacy scripts only after wrapper parity checks exist.
+Recommended pattern:
 
-## One-command validation
+1. Make a small change.
+2. Run the check suite.
+3. Commit only after tests pass.
+4. Avoid moving active workflow scripts unless wrapper parity tests exist.
+5. Keep AI/API execution off by default.
 
-Run:
+---
+
+## Environment
+
+Create the conda environment:
+
+    conda env create -f environment.yml
+    conda activate sra_paper_curator
+
+The environment uses Python 3.11.
+
+---
+
+## Validation commands
+
+Fresh clone or repo-level smoke check:
 
     python scripts/05_run_all_checks.py
 
-This checks:
+Artifact-backed validation on a machine with generated outputs:
 
-- Python files compile
-- final release can be rebuilt
-- final release QC passes
-- golden-output regression tests pass
-- workflow runner defaults to dry-run
-- AI-capable workflow step refuses unsafe execution
+    python scripts/05_run_all_checks.py --with-artifacts
 
-## Golden outputs
+Pipeline readiness report:
 
-See:
+    python scripts/04_pipeline_readiness_report.py
 
-    docs/GOLDEN_OUTPUTS.md
-
-Current expected values:
-
-- RNA study summaries: 69
-- ChIP study summaries: 42
-- ChIP rowwise review rows: 733
-- ChIP target-control map rows: 490
-
-These are regression checks, not biological claims.
+---
 
 ## Production wrapper
 
@@ -50,74 +51,111 @@ Workflow steps are defined in:
 
     workflows/steps.tsv
 
-Run:
+List steps:
 
     python workflows/run_workflow_step.py --list
 
-Show a step without running it:
+Show one step:
 
     python workflows/run_workflow_step.py --step 90
 
-All workflow steps are dry-run by default.
+Run a non-AI step:
+
+    python workflows/run_workflow_step.py --step 90 --execute
+
+Run an AI-capable step:
+
+    AGENTIC_AI_ENABLE_API=1 python workflows/run_workflow_step.py --step 33 --execute --execute-ai
+
+---
 
 ## AI safety
 
-AI/API execution must be explicit.
-
-An AI-capable step requires:
+AI/API execution requires all of:
 
     --execute
     --execute-ai
     AGENTIC_AI_ENABLE_API=1
 
-Without these, the wrapper refuses execution.
+Without these, AI-capable workflow steps refuse execution.
 
-## Refactoring map
+---
 
-Current active workflow documentation:
+## Golden outputs
 
-    docs/ACTIVE_WORKFLOW_MAP.md
+See:
 
-Production reorganization plan:
+    docs/GOLDEN_OUTPUTS.md
+    tests/test_golden_outputs.py
 
-    docs/PRODUCTION_REORG_PLAN.md
+Current expected values:
+
+    RNA study summaries: 69
+    ChIP study summaries: 42
+    ChIP rowwise review rows: 733
+    ChIP target-control map rows: 490
+
+These are regression checks, not biological claims.
+
+---
+
+## Shared package code
+
+Reusable production utilities live in:
+
+    src/sra_paper_curator/
+
+Current modules:
+
+    artifact_checks.py
+    command_utils.py
+    file_utils.py
+
+Future extraction candidates:
+
+- workflow map loading
+- validation helper functions
+- release QC constants
+- ChIP target-control utilities
+- publication-resolution helpers
+
+---
 
 ## What not to commit
 
-Do not commit generated outputs:
+Do not commit:
 
-- `outputs/`
-- `results/`
-- raw PDFs
-- raw AI JSON files
-- `.env`
-- API keys
-- local scratch files
+    outputs/
+    results/
+    local_scratch/
+    .env
+    API keys
+    raw PDFs
+    raw AI JSON files
+    bulky generated intermediates
 
-## Current production package
+---
 
-Shared utilities currently live in:
+## Documentation map
 
-    src/sra_paper_curator/file_utils.py
-    src/sra_paper_curator/command_utils.py
+Useful documentation:
 
-The next reasonable extractions are:
+    README.md
+    docs/REVIEWER_GUIDE.md
+    docs/CURATOR_GUIDE.md
+    docs/ACTIVE_WORKFLOW_MAP.md
+    docs/PRODUCTION_REORG_PLAN.md
+    docs/PIPELINE_READINESS_REPORT.md
+    workflows/README.md
 
-- workflow map loading
-- release QC constants
-- validation helper functions
-- ChIP target-control utilities
+---
 
-## Fresh clone versus artifact-backed checks
+## Next development phase
 
-A fresh Git clone does not contain generated `outputs/` or `results/` artifacts.
+The next high-value phase is controlled end-to-end rerun testing:
 
-For a fresh clone smoke check, run:
-
-    python scripts/05_run_all_checks.py
-
-This verifies the code, workflow wrapper, and AI safety guard.
-
-For the full artifact-backed production check on a machine that already has generated outputs, run:
-
-    python scripts/05_run_all_checks.py --with-artifacts
+1. deterministic rerun without AI
+2. regeneration of packets and evidence tables
+3. final release regeneration
+4. comparison to golden outputs
+5. small controlled AI rerun only after deterministic checks pass
