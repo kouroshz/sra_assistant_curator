@@ -2,6 +2,27 @@
 
 This guide is for a new publication/reviewer user running the RNA + ChIP curator workflow from local input workbooks. Commands are shown from the repository root.
 
+## Recipe-Based Path
+
+For routine reruns, start with named recipes:
+
+```bash
+python workflows/run_recipe.py list
+python workflows/run_recipe.py rna-prep --execute
+python workflows/run_recipe.py chip-prep --execute
+python workflows/run_recipe.py show-outputs
+```
+
+`rna-prep` builds RNA metadata and paper packets up to the AI queue. `chip-prep` builds ChIP publication links, downloads available papers, builds AI packets, and preflights them. Final Excel/Markdown outputs require completed AI/post-AI validation/finalization or an existing generated release.
+
+The detailed step numbers below are retained for auditability and exact rerun control. Internal step namespaces are:
+
+```text
+00-15  RNA and shared RNA preparation/validation/finalization
+20-43  ChIP preparation/AI validation/finalization
+90+    release and output helper steps
+```
+
 ## 1. Create The Environment
 
 ```bash

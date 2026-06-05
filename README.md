@@ -23,6 +23,21 @@ Optional local inputs:
 
 Do not replace the tracked `papers/` directory with a symlink. Copy PDFs into it or symlink individual PDF files inside it.
 
+Recommended PDF naming:
+
+```text
+papers/<PMID>_<SHORT_TITLE>.pdf
+papers/35288749_Genome-wide_landscape_of_ApiAP2_transcription_factors.pdf
+```
+
+Including the PMID in the filename helps deterministic packet/paper matching and curator inspection. PDFs can be added manually or obtained with the open-access downloader. ChIP prep uses the downloader workflow; it can also be run directly:
+
+```bash
+python workflows/run_workflow_step.py --step 28 --execute
+```
+
+Set `NCBI_EMAIL` in `.env` for public metadata and paper-download steps.
+
 ## What It Produces
 
 Final curator-facing outputs are packaged under:
@@ -69,7 +84,7 @@ Optional AI steps:
 
 AI/API execution requires explicit opt-in with `--execute --execute-ai` and `AGENTIC_AI_ENABLE_API=1`. `OPENAI_API_KEY` is needed only for real AI runs.
 
-## Quick Start
+## Recommended Quick Start
 
 Create or update the environment:
 
@@ -105,25 +120,32 @@ python scripts/06_rerun_readiness_check.py
 python scripts/05_run_all_checks.py
 ```
 
-Run RNA deterministic setup to the AI boundary:
+Run RNA prep:
 
 ```bash
-python workflows/run_workflow_step.py --continue-from 00 --through 05 --execute
+python workflows/run_recipe.py rna-prep --execute
 ```
 
-No-papers mode is supported through RNA Step 05; the trusted queue builds, but packets defer when `paper_pdf_count=0`.
+RNA prep builds metadata and paper packets up to the AI queue. No-papers mode is supported through this point; the trusted queue builds, but packets defer when `paper_pdf_count=0`.
 
-Run ChIP deterministic setup to the AI boundary:
+Run ChIP prep:
 
 ```bash
-python workflows/run_workflow_step.py --continue-from 20 --through 32 --execute
+python workflows/run_recipe.py chip-prep --execute
 ```
 
-After AI/post-AI validation and finalization have completed, or when inspecting an existing generated release, find or package curator outputs:
+ChIP prep builds publication links, downloads available papers, builds AI packets, and preflights them.
+
+Find current curator outputs:
 
 ```bash
-python scripts/90_show_curator_outputs.py
-python workflows/run_workflow_step.py --step 90 --execute
+python workflows/run_recipe.py show-outputs
+```
+
+Final Excel and Markdown outputs require completed AI/post-AI validation/finalization or an existing generated release. To package final outputs:
+
+```bash
+python workflows/run_recipe.py package --execute
 ```
 
 ## Full Rerun With API
@@ -143,54 +165,34 @@ OPENAI_API_KEY=your-local-key
 AGENTIC_AI_ENABLE_API=1
 ```
 
-Then use workflow commands with both `--execute` and `--execute-ai`.
+Then use recipe commands with both `--execute` and `--execute-ai`.
 
-RNA AI steps:
+AI recipes:
 
-```text
-06  one-packet AI runner
-07  RNA trusted batch AI runner
-```
-
-ChIP AI step:
-
-```text
-33  ChIP small-packet AI batch runner
-```
+- `rna-ai`: RNA batch AI review
+- `chip-ai`: ChIP small-packet AI review
 
 Examples:
 
 ```bash
-python workflows/run_workflow_step.py --step 07 --execute --execute-ai
-python workflows/run_workflow_step.py --step 33 --execute --execute-ai
+python workflows/run_recipe.py rna-ai --execute --execute-ai
+python workflows/run_recipe.py chip-ai --execute --execute-ai
 ```
 
 After AI JSONs exist, continue the deterministic validation, repair, inventory, workbook, summary, and release-generation steps. See `docs/RERUN_VALIDATION.md` for the full RNA and ChIP command sequence, including ChIP chunked-packet handling.
 
 ## Key Commands
 
-List workflow steps:
+List user-facing recipes:
 
 ```bash
-python workflows/run_workflow_step.py --list
+python workflows/run_recipe.py list
 ```
 
-Dry-run one step:
+Dry-run a recipe:
 
 ```bash
-python workflows/run_workflow_step.py --step 28
-```
-
-Run a deterministic range:
-
-```bash
-python workflows/run_workflow_step.py --continue-from 20 --through 32 --execute
-```
-
-Package final outputs:
-
-```bash
-python workflows/run_workflow_step.py --step 90 --execute
+python workflows/run_recipe.py chip-prep
 ```
 
 Show final output paths:
@@ -198,6 +200,18 @@ Show final output paths:
 ```bash
 python scripts/90_show_curator_outputs.py --with-open-command
 ```
+
+## Advanced: Workflow Step Map
+
+The tested internal workflow map is preserved in `workflows/steps.tsv`. Use it for auditability, debugging, and exact rerun control:
+
+```bash
+python workflows/run_workflow_step.py --list
+python workflows/run_workflow_step.py --step 28
+python workflows/run_workflow_step.py --continue-from 20 --through 32 --execute
+```
+
+The README favors named recipes so new users do not need to learn internal step numbers first.
 
 ## Documentation
 

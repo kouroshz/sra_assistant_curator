@@ -49,6 +49,7 @@ PYTHON_FILES_TO_COMPILE = [
     "scripts/41e_batch_run_trusted_queue_production.py",
     "scripts/62_batch_run_chip_small_packets_production.py",
     "scripts/90_show_curator_outputs.py",
+    "workflows/run_recipe.py",
     "workflows/run_workflow_step.py",
     "tests/test_golden_outputs.py",
 ]
@@ -119,6 +120,18 @@ def main():
     dry = run([sys.executable, "workflows/run_workflow_step.py", "--step", "90"])
     if "DRY-RUN only" not in dry.stdout:
         raise SystemExit("FAILED: workflow step 90 did not default to dry-run")
+
+    recipes = run([sys.executable, "workflows/run_recipe.py", "list"])
+    if "rna-prep" not in recipes.stdout or "chip-prep" not in recipes.stdout:
+        raise SystemExit("FAILED: recipe list did not include expected recipes")
+
+    rna_recipe = run([sys.executable, "workflows/run_recipe.py", "rna-prep"])
+    if "Range complete: 00 through 05" not in rna_recipe.stdout:
+        raise SystemExit("FAILED: rna-prep recipe dry-run did not complete")
+
+    chip_recipe = run([sys.executable, "workflows/run_recipe.py", "chip-prep"])
+    if "Range complete: 20 through 32" not in chip_recipe.stdout:
+        raise SystemExit("FAILED: chip-prep recipe dry-run did not complete")
 
     unsafe_ai = run(
         [sys.executable, "workflows/run_workflow_step.py", "--step", "33", "--execute"],
