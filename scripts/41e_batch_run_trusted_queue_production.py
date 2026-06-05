@@ -14,6 +14,7 @@ Key production rules:
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from datetime import datetime
@@ -81,6 +82,12 @@ def main():
     ap.add_argument("--force", action="store_true", help="Include/rerun PASS packets.")
     ap.add_argument("--python", default=sys.executable)
     args = ap.parse_args()
+
+    if args.execute:
+        if os.environ.get("AGENTIC_AI_ENABLE_API") != "1":
+            raise SystemExit("Refusing --execute: AGENTIC_AI_ENABLE_API must be set to 1 before any packet selection or API runner launch.")
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise SystemExit("Refusing --execute: OPENAI_API_KEY is not set. The key value was not printed.")
 
     queue = read_tsv(args.queue)
     if queue.empty:
