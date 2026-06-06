@@ -4,7 +4,7 @@ Run production sanity checks.
 
 Default behavior:
 - In a fresh clone without generated outputs, runs repo smoke checks only.
-- In a local working tree with generated outputs, also runs artifact-backed release checks.
+- Artifact-backed final release checks run only when --with-artifacts is supplied.
 
 Use:
     python scripts/05_run_all_checks.py
@@ -48,6 +48,9 @@ PYTHON_FILES_TO_COMPILE = [
     "scripts/41_batch_run_agentic_ai_on_trusted_queue.py",
     "scripts/41e_batch_run_trusted_queue_production.py",
     "scripts/62_batch_run_chip_small_packets_production.py",
+    "scripts/64_merge_chip_chunk_outputs.py",
+    "scripts/68e_finalize_chip_curator_excel_v5.py",
+    "scripts/72c_final_qc_chip_study_summaries.py",
     "scripts/90_show_curator_outputs.py",
     "workflows/run_recipe.py",
     "workflows/run_workflow_step.py",
@@ -129,6 +132,66 @@ def main():
         ),
     ])
 
+    run([
+        sys.executable,
+        "-c",
+        (
+            "import importlib.util; "
+            "spec=importlib.util.spec_from_file_location('rr','workflows/run_recipe.py'); "
+            "m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m); "
+            "cmd=m.build_commands(m.RECIPES['rna-ai'], execute=True, execute_ai=True)[0]; "
+            "assert '--extra-args' in cmd and cmd[-1] == '--execute'; "
+            "cmd=m.build_commands(m.RECIPES['chip-ai'], execute=True, execute_ai=True)[0]; "
+            "assert '--extra-args' in cmd and cmd[-1] == '--execute'"
+        ),
+    ])
+
+    run([
+        sys.executable,
+        "-c",
+        (
+            "import importlib.util; "
+            "spec=importlib.util.spec_from_file_location('m','scripts/64_merge_chip_chunk_outputs.py'); "
+            "mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); "
+            "assert hasattr(mod, 'infer_chunk_queue'); assert hasattr(mod, 'infer_parent_packet_id')"
+        ),
+    ])
+
+    run([
+        sys.executable,
+        "-c",
+        (
+            "import importlib.util; "
+            "spec=importlib.util.spec_from_file_location('w','scripts/68e_finalize_chip_curator_excel_v5.py'); "
+            "mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); "
+            "assert hasattr(mod, 'build_base_workbook_from_final_qc')"
+        ),
+    ])
+
+    run([
+        sys.executable,
+        "-c",
+        (
+            "import importlib.util; "
+            "spec=importlib.util.spec_from_file_location('s','scripts/72c_final_qc_chip_study_summaries.py'); "
+            "mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); "
+            "assert hasattr(mod, 'ensure_input_tsv'); "
+            "assert hasattr(mod, 'normalize_rows'); "
+            "assert 'assay_class' in mod.NORMALIZED_COLUMNS"
+        ),
+    ])
+
+    run([
+        sys.executable,
+        "-c",
+        (
+            "from pathlib import Path; "
+            "from dotenv import load_dotenv; "
+            "load_dotenv(Path('.env')); "
+            "print('dotenv load check: ok (secrets not printed)')"
+        ),
+    ])
+
     run([sys.executable, "scripts/06_rerun_readiness_check.py"])
 
     dry = run([sys.executable, "workflows/run_workflow_step.py", "--step", "90"])
@@ -166,12 +229,15 @@ def main():
             print("  - " + item)
         raise SystemExit(1)
 
-    if args.repo_only or not have_artifacts:
+    if args.repo_only or not args.with_artifacts:
         print("")
         print("SKIP: artifact-backed release checks were not run.")
-        print("Reason: generated outputs are not present in this checkout.")
+        if not have_artifacts:
+            print("Reason: generated outputs are not present in this checkout.")
+        else:
+            print("Reason: --with-artifacts was not supplied.")
         print("")
-        print("This is expected in a fresh Git clone because outputs/results are ignored.")
+        print("This is expected for routine repo smoke checks; outputs/results are ignored in fresh clones.")
         print("To run full artifact-backed checks on the production machine, use:")
         print("")
         print("  python scripts/05_run_all_checks.py --with-artifacts")

@@ -138,7 +138,7 @@ def run_one(row, *, execute, execute_ai, extra_args=None):
     except subprocess.CalledProcessError as e:
         end = timestamp()
         print(f"FAILED {end} step {row['step']} returncode={e.returncode}")
-        raise
+        raise SystemExit(e.returncode)
     end = timestamp()
     print(f"COMPLETE {end} step {row['step']} {row['production_name']}")
 

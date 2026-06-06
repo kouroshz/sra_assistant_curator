@@ -10,10 +10,13 @@ For routine reruns, start with named recipes:
 python workflows/run_recipe.py list
 python workflows/run_recipe.py rna-prep --execute
 python workflows/run_recipe.py chip-prep --execute
+python workflows/run_recipe.py rna-finalize --execute
+python workflows/run_recipe.py chip-finalize --execute
+python workflows/run_recipe.py package --execute
 python workflows/run_recipe.py show-outputs
 ```
 
-`rna-prep` builds RNA metadata and paper packets up to the AI queue. `chip-prep` builds ChIP publication links, downloads available papers, builds AI packets, and preflights them. Final Excel/Markdown outputs require completed AI/post-AI validation/finalization or an existing generated release.
+`rna-prep` builds RNA metadata and paper packets up to the AI queue. `chip-prep` builds ChIP publication links, downloads available papers, builds AI packets, and preflights them. `rna-finalize` and `chip-finalize` run deterministic post-AI validation/finalization once AI JSONs exist. Final Excel/Markdown outputs require completed AI/post-AI validation/finalization or an existing generated release.
 
 The detailed step numbers below are retained for auditability and exact rerun control. Internal step namespaces are:
 
@@ -212,7 +215,7 @@ Post-AI ChIP validation, repair, inventory, final QC, workbook generation, and c
 After RNA and ChIP curator outputs are available:
 
 ```bash
-python workflows/run_workflow_step.py --step 90 --execute
+python workflows/run_recipe.py package --execute
 python scripts/03_qc_final_release.py
 ```
 
@@ -242,12 +245,12 @@ The same release folder also contains clean summary TSVs, QC reports, a manifest
 These are regression sanity checks from the current production artifacts, not biological claims:
 
 ```text
-RNA study summary PMID blocks: 69
-RNA study summary TSV rows: 69
-ChIP study summary PMID blocks: 42
-ChIP study summary TSV rows: 42
-ChIP rowwise review rows: 733
-ChIP target-control map rows: 490
+RNA study summary PMID blocks: 70
+RNA study summary TSV rows: 70
+ChIP study summary PMID blocks: 43
+ChIP study summary TSV rows: 43
+ChIP rowwise review rows: 737
+ChIP target-control map rows: 492
 Golden-output tests: 7 passing tests
 ```
 
@@ -261,4 +264,4 @@ python scripts/04_pipeline_readiness_report.py
 python workflows/run_workflow_step.py --list
 ```
 
-In a fresh clone without generated outputs, artifact-backed checks are skipped. On a production machine with generated artifacts, the checks also validate the final release and golden-output counts.
+Default checks are repo smoke checks and do not require generated outputs. On a production machine or fresh execution clone with generated artifacts, run `python scripts/05_run_all_checks.py --with-artifacts` to validate the final release and golden-output counts.

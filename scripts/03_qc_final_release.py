@@ -48,6 +48,16 @@ REQUIRED_FILES = [
 ]
 
 
+EXPECTED_COUNTS = {
+    "rna_markdown_blocks": 70,
+    "rna_study_summary_rows": 70,
+    "chip_markdown_blocks": 43,
+    "chip_study_summary_rows": 43,
+    "chip_rowwise_rows": 737,
+    "chip_target_control_rows": 492,
+}
+
+
 FORBIDDEN_SUFFIXES = [
     ".json",
     ".pdf",
@@ -148,18 +158,30 @@ def main():
     lines.append(f"- ChIP rowwise review rows: {chip_rowwise_rows}")
     lines.append(f"- ChIP target-control map rows: {chip_tc_rows}")
 
-    if chip_md_blocks != 42:
-        problems.append(f"Expected 42 ChIP markdown PMID blocks; observed {chip_md_blocks}")
-    if chip_tsv_rows != 42:
-        problems.append(f"Expected 42 ChIP study summary TSV rows; observed {chip_tsv_rows}")
-    if chip_rowwise_rows != 733:
-        problems.append(f"Expected 733 ChIP rowwise rows; observed {chip_rowwise_rows}")
-    if chip_tc_rows != 490:
-        problems.append(f"Expected 490 ChIP target-control rows; observed {chip_tc_rows}")
-    if rna_md_blocks == 0:
-        problems.append("RNA markdown summary appears to have zero PMID blocks")
-    if rna_tsv_rows == 0:
-        problems.append("RNA summary TSV appears empty")
+    if rna_md_blocks != EXPECTED_COUNTS["rna_markdown_blocks"]:
+        problems.append(
+            f"Expected {EXPECTED_COUNTS['rna_markdown_blocks']} RNA markdown PMID blocks; observed {rna_md_blocks}"
+        )
+    if rna_tsv_rows != EXPECTED_COUNTS["rna_study_summary_rows"]:
+        problems.append(
+            f"Expected {EXPECTED_COUNTS['rna_study_summary_rows']} RNA study summary TSV rows; observed {rna_tsv_rows}"
+        )
+    if chip_md_blocks != EXPECTED_COUNTS["chip_markdown_blocks"]:
+        problems.append(
+            f"Expected {EXPECTED_COUNTS['chip_markdown_blocks']} ChIP markdown PMID blocks; observed {chip_md_blocks}"
+        )
+    if chip_tsv_rows != EXPECTED_COUNTS["chip_study_summary_rows"]:
+        problems.append(
+            f"Expected {EXPECTED_COUNTS['chip_study_summary_rows']} ChIP study summary TSV rows; observed {chip_tsv_rows}"
+        )
+    if chip_rowwise_rows != EXPECTED_COUNTS["chip_rowwise_rows"]:
+        problems.append(
+            f"Expected {EXPECTED_COUNTS['chip_rowwise_rows']} ChIP rowwise rows; observed {chip_rowwise_rows}"
+        )
+    if chip_tc_rows != EXPECTED_COUNTS["chip_target_control_rows"]:
+        problems.append(
+            f"Expected {EXPECTED_COUNTS['chip_target_control_rows']} ChIP target-control rows; observed {chip_tc_rows}"
+        )
 
     lines.append("")
     lines.append("## Zip check")

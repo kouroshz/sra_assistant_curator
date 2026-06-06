@@ -24,6 +24,10 @@ from openpyxl.utils import get_column_letter
 OUTDIR = Path("outputs/06_CHIP_AI_ASSIST/21_curator_excel")
 LATEST = OUTDIR / "LATEST_CHIP_CURATOR_REVIEW.txt"
 ACTIVE = Path("outputs/06_CHIP_AI_ASSIST/14_chip_ai_inventory/chip_ai_active_validated_outputs.tsv")
+FINAL_QC = Path("outputs/06_CHIP_AI_ASSIST/20_final_qc")
+PACKET_STATUS = FINAL_QC / "trusted_chip_ai_phase_packet_status.tsv"
+ROWWISE_REVIEW = FINAL_QC / "chip_rowwise_review.tsv"
+TARGET_CONTROL_MAP = FINAL_QC / "chip_target_control_map_review.tsv"
 
 
 COLORS = {
@@ -218,7 +222,92 @@ def build_paper_summaries(active):
     rows = []
     for _, r in active.iterrows():
         rows.append(extract_paper_summary(r))
-    return pd.DataFrame(rows)
+    cols = [
+        "packet_id", "pmid", "bioproject", "targets", "chip_peak_calling_ready",
+        "one_sentence_summary", "study_goal", "organism_strain",
+        "main_comparisons_or_sample_axes", "paper_evidence_locations",
+        "curator_warnings_clean", "technical_warnings_clean", "active_ai_json",
+        "curator_summary_status", "curator_notes",
+    ]
+    return pd.DataFrame(rows, columns=cols)
+
+
+def read_tsv_if_exists(path):
+    path = Path(path)
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_csv(path, sep="\t", dtype=str).fillna("")
+
+
+def build_base_workbook_from_final_qc() -> Path:
+    OUTDIR.mkdir(parents=True, exist_ok=True)
+
+    packet = read_tsv_if_exists(PACKET_STATUS)
+    rowwise = read_tsv_if_exists(ROWWISE_REVIEW)
+    tc = read_tsv_if_exists(TARGET_CONTROL_MAP)
+    active = read_tsv_if_exists(ACTIVE)
+
+    if packet.empty and rowwise.empty and tc.empty and active.empty:
+        raise SystemExit(
+            "Missing latest ChIP workbook pointer and no final-QC source tables were found. "
+            "Run ChIP finalization steps before Step 41."
+        )
+
+    readme = pd.DataFrame([
+        {
+            "section": "Start here",
+            "note": "Fresh-run base workbook created from ChIP final-QC tables before v5 curator polish.",
+        },
+        {
+            "section": "Curator guidance",
+            "note": "Review Study_Review, Target_Control_Map_Review, Problem_Rows, Rowwise_Review, and Paper_Summaries.",
+        },
+    ])
+
+    qc = pd.DataFrame([
+        {"metric": "packet_status_rows", "value": len(packet), "source": str(PACKET_STATUS)},
+        {"metric": "rowwise_review_rows", "value": len(rowwise), "source": str(ROWWISE_REVIEW)},
+        {"metric": "target_control_map_rows", "value": len(tc), "source": str(TARGET_CONTROL_MAP)},
+        {"metric": "active_inventory_rows", "value": len(active), "source": str(ACTIVE)},
+    ])
+
+    if not packet.empty:
+        study = packet.copy()
+    elif not active.empty:
+        study = active.copy()
+    else:
+        study = pd.DataFrame()
+
+    if not rowwise.empty:
+        problem_cols = [
+            c for c in rowwise.columns
+            if any(k in c.lower() for k in ["problem", "warning", "review_flag", "confidence", "packet_id", "pmid", "run"])
+        ]
+        problem = rowwise[problem_cols].copy() if problem_cols else rowwise.copy()
+    else:
+        problem = pd.DataFrame()
+
+    sheets = {
+        "README": readme,
+        "QC_Summary": qc,
+        "Curator_Triage": study.head(0).copy() if study.empty else study.copy(),
+        "Study_Review": study,
+        "Target_Control_Map_Review": tc,
+        "Problem_Rows": problem,
+        "Rowwise_Review": rowwise,
+        "Technical_Inventory": active,
+    }
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out = OUTDIR / f"chip_curator_review_base_{ts}.xlsx"
+    with pd.ExcelWriter(out, engine="openpyxl") as writer:
+        for name, df in sheets.items():
+            df.to_excel(writer, sheet_name=name[:31], index=False)
+
+    LATEST.write_text(str(out) + "\n")
+    print("No existing ChIP curator workbook pointer found.")
+    print("Built fresh-run base workbook:", out)
+    return out
 
 
 def add_summary_columns_to_study(study, paper):
@@ -466,7 +555,14 @@ def validate_workbook(path):
 
 
 def main():
-    latest = Path(LATEST.read_text().strip())
+    if not LATEST.exists() or not clean(LATEST.read_text()):
+        latest = build_base_workbook_from_final_qc()
+    else:
+        latest = Path(LATEST.read_text().strip())
+        if not latest.exists():
+            print(f"Latest ChIP workbook pointer target is missing: {latest}")
+            latest = build_base_workbook_from_final_qc()
+
     sheets = pd.read_excel(latest, sheet_name=None, dtype=str)
     sheets = {k: v.fillna("") for k, v in sheets.items()}
 

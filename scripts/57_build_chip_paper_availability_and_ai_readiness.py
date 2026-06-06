@@ -62,7 +62,7 @@ def is_pmid(x: str) -> bool:
 def status_has_pdf(status: str, pdf_path: str) -> bool:
     status = clean(status)
     pdf_path = clean(pdf_path)
-    return bool(pdf_path) and status in {
+    return bool(pdf_path) and (status.startswith("downloaded_") or status in {
         "already_exists",
         "downloaded_europepmc_render",
         "downloaded_unpaywall_best",
@@ -70,7 +70,7 @@ def status_has_pdf(status: str, pdf_path: str) -> bool:
         "downloaded_ncbi_pmc_pdf",
         "downloaded_openalex",
         "downloaded_url",
-    }
+    })
 
 
 def main():

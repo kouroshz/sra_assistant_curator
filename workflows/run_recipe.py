@@ -9,17 +9,29 @@ public quick start readable without duplicating workflow execution logic.
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - dependency is optional for dry-run use
+    load_dotenv = None
 
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW_RUNNER = ROOT / "workflows/run_workflow_step.py"
 OUTPUT_RUNNER = ROOT / "scripts/90_show_curator_outputs.py"
+CHECK_RUNNER = ROOT / "scripts/05_run_all_checks.py"
 
 
 RECIPES = {
+    "check": {
+        "description": "Run non-API production smoke checks.",
+        "ai": False,
+        "command": ["script", str(CHECK_RUNNER)],
+    },
     "rna-prep": {
         "description": "Deterministic RNA setup to the AI boundary: metadata, paper packets, trusted AI queue.",
         "ai": False,
@@ -33,12 +45,37 @@ RECIPES = {
     "rna-ai": {
         "description": "RNA AI batch review. Requires --execute --execute-ai and API guards for real API execution.",
         "ai": True,
-        "command": ["workflow", "--step", "07"],
+        "command": ["workflow", "--step", "07", "--extra-args-on-execute", "--execute"],
+    },
+    "rna-finalize": {
+        "description": "Deterministic RNA aggregate inventory, QC, summaries, workbook, and finalization after RNA AI.",
+        "ai": False,
+        "command": [
+            "sequence",
+            ["workflow", "--step", "10"],
+            ["workflow", "--step", "11"],
+            ["workflow", "--step", "12"],
+            ["workflow", "--step", "13"],
+            ["workflow", "--step", "14"],
+            ["workflow", "--step", "15"],
+        ],
     },
     "chip-ai": {
         "description": "ChIP small-packet AI batch review. Requires --execute --execute-ai and API guards for real API execution.",
         "ai": True,
-        "command": ["workflow", "--step", "33"],
+        "command": ["workflow", "--step", "33", "--extra-args-on-execute", "--execute"],
+    },
+    "chip-finalize": {
+        "description": "Deterministic ChIP aggregate inventory, final QC, workbook, companion files, and summaries after ChIP AI.",
+        "ai": False,
+        "command": [
+            "sequence",
+            ["workflow", "--step", "39"],
+            ["workflow", "--step", "40"],
+            ["workflow", "--step", "41"],
+            ["workflow", "--step", "42"],
+            ["workflow", "--step", "43"],
+        ],
     },
     "package": {
         "description": "Package final curator-facing release folder and zip.",
@@ -53,17 +90,32 @@ RECIPES = {
 }
 
 
-def build_command(recipe: dict[str, object], *, execute: bool, execute_ai: bool) -> list[str]:
-    parts = list(recipe["command"])
+def build_single_command(parts: list[object], *, execute: bool, execute_ai: bool) -> list[str]:
+    parts = list(parts)
     kind = parts.pop(0)
 
     if kind == "workflow":
+        extra_on_execute = []
+        if "--extra-args-on-execute" in parts:
+            idx = parts.index("--extra-args-on-execute")
+            extra_on_execute = parts[idx + 1:]
+            parts = parts[:idx]
         cmd = [sys.executable, str(WORKFLOW_RUNNER)] + parts
         if execute:
             cmd.append("--execute")
         if execute_ai:
             cmd.append("--execute-ai")
+        if execute and extra_on_execute:
+            cmd.append("--extra-args")
+            cmd.extend(extra_on_execute)
         return cmd
+
+    if kind == "script":
+        if execute:
+            raise SystemExit("Recipe check is non-mutating and does not accept --execute.")
+        if execute_ai:
+            raise SystemExit("Recipe check is not an AI recipe and does not accept --execute-ai.")
+        return [sys.executable] + parts
 
     if kind == "outputs":
         if execute:
@@ -75,6 +127,22 @@ def build_command(recipe: dict[str, object], *, execute: bool, execute_ai: bool)
     raise SystemExit(f"Unknown recipe command kind: {kind}")
 
 
+def build_commands(recipe: dict[str, object], *, execute: bool, execute_ai: bool) -> list[list[str]]:
+    parts = list(recipe["command"])
+    if not parts:
+        raise SystemExit("Recipe command is empty.")
+
+    if parts[0] == "sequence":
+        commands = []
+        for subcommand in parts[1:]:
+            if not isinstance(subcommand, list):
+                raise SystemExit("Recipe sequence entries must be command lists.")
+            commands.append(build_single_command(subcommand, execute=execute, execute_ai=execute_ai))
+        return commands
+
+    return [build_single_command(parts, execute=execute, execute_ai=execute_ai)]
+
+
 def print_recipes() -> None:
     print("Available recipes:")
     for name, recipe in RECIPES.items():
@@ -82,6 +150,9 @@ def print_recipes() -> None:
 
 
 def main() -> None:
+    if load_dotenv is not None:
+        load_dotenv(ROOT / ".env")
+
     parser = argparse.ArgumentParser()
     parser.add_argument("recipe", help="Recipe name, or 'list'.")
     parser.add_argument("--execute", action="store_true", help="Execute the underlying workflow command.")
@@ -101,19 +172,28 @@ def main() -> None:
     recipe = RECIPES[args.recipe]
     if args.execute_ai and not recipe["ai"]:
         raise SystemExit(f"Recipe {args.recipe} is not an AI recipe and does not accept --execute-ai.")
+    if args.execute and recipe["ai"]:
+        if not args.execute_ai:
+            raise SystemExit(f"Recipe {args.recipe} requires --execute-ai for API-capable execution.")
+        if os.environ.get("AGENTIC_AI_ENABLE_API") != "1":
+            raise SystemExit(
+                f"Recipe {args.recipe} requires AGENTIC_AI_ENABLE_API=1 in .env or shell for API-capable execution."
+            )
 
-    cmd = build_command(recipe, execute=args.execute, execute_ai=args.execute_ai)
+    commands = build_commands(recipe, execute=args.execute, execute_ai=args.execute_ai)
     print(f"Recipe: {args.recipe}", flush=True)
     print(f"Purpose: {recipe['description']}", flush=True)
-    print("Underlying command:", flush=True)
-    print("  " + " ".join(cmd), flush=True)
+    print("Underlying command:" if len(commands) == 1 else "Underlying commands:", flush=True)
+    for cmd in commands:
+        print("  " + " ".join(cmd), flush=True)
     print("", flush=True)
 
-    result = subprocess.run(cmd, cwd=ROOT, check=False)
-    if result.returncode != 0:
-        print("")
-        print(f"Recipe failed: {args.recipe}. See command output above.")
-        raise SystemExit(result.returncode)
+    for cmd in commands:
+        result = subprocess.run(cmd, cwd=ROOT, check=False)
+        if result.returncode != 0:
+            print("")
+            print(f"Recipe failed: {args.recipe}. See command output above.")
+            raise SystemExit(result.returncode)
 
 
 if __name__ == "__main__":

@@ -142,9 +142,11 @@ Find current curator outputs:
 python workflows/run_recipe.py show-outputs
 ```
 
-Final Excel and Markdown outputs require completed AI/post-AI validation/finalization or an existing generated release. To package final outputs:
+Final Excel and Markdown outputs require completed AI/post-AI validation/finalization or an existing generated release. After AI JSONs exist, run:
 
 ```bash
+python workflows/run_recipe.py rna-finalize --execute
+python workflows/run_recipe.py chip-finalize --execute
 python workflows/run_recipe.py package --execute
 ```
 
@@ -171,6 +173,8 @@ AI recipes:
 
 - `rna-ai`: RNA batch AI review
 - `chip-ai`: ChIP small-packet AI review
+- `rna-finalize`: deterministic RNA aggregate QC, summaries, workbook, and finalization
+- `chip-finalize`: deterministic ChIP aggregate QC, workbook, companion files, summaries, and finalization
 
 Examples:
 
@@ -179,7 +183,7 @@ python workflows/run_recipe.py rna-ai --execute --execute-ai
 python workflows/run_recipe.py chip-ai --execute --execute-ai
 ```
 
-After AI JSONs exist, continue the deterministic validation, repair, inventory, workbook, summary, and release-generation steps. See `docs/RERUN_VALIDATION.md` for the full RNA and ChIP command sequence, including ChIP chunked-packet handling.
+After AI JSONs exist, continue the deterministic aggregate QC, inventory, workbook, summary, and release-generation steps. See `docs/RERUN_VALIDATION.md` for the full RNA and ChIP command sequence, including ChIP chunked-packet handling.
 
 ## Key Commands
 

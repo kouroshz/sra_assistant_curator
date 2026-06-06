@@ -22,10 +22,14 @@ from datetime import datetime
 from collections import Counter
 import argparse
 import json
+import subprocess
+import sys
 import pandas as pd
 
 
 MAIN_QUEUE = Path("outputs/06_CHIP_AI_ASSIST/09_chip_ai_packets/chip_ai_packet_queue.tsv")
+DEFAULT_CHUNK_BASE = Path("outputs/06_CHIP_AI_ASSIST/16_chip_ai_chunked_packets")
+DEFAULT_VALIDATION_DIR = Path("outputs/06_CHIP_AI_ASSIST/13_chip_ai_validation")
 
 
 def clean(x):
@@ -56,6 +60,42 @@ def latest_json(chunk_outdir: Path, packet_id: str) -> Path:
     raise SystemExit(f"No AI JSON found for chunk: {packet_id}")
 
 
+def infer_chunk_queue() -> Path:
+    hits = sorted(DEFAULT_CHUNK_BASE.glob("*/*.chunk_queue.tsv"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if not hits:
+        raise SystemExit(
+            "Missing --chunk-queue and no default chunk queue found. "
+            "Run Step 34 or provide --chunk-queue."
+        )
+    return hits[0]
+
+
+def infer_parent_packet_id(chunk_queue_path: Path, chunk_queue: pd.DataFrame) -> str:
+    if "parent_packet_id" in chunk_queue.columns:
+        vals = sorted(set(chunk_queue["parent_packet_id"].map(clean)) - {""})
+        if len(vals) == 1:
+            return vals[0]
+        if len(vals) > 1:
+            raise SystemExit(f"Chunk queue has multiple parent_packet_id values: {vals}")
+
+    name = chunk_queue_path.name
+    suffix = ".chunk_queue.tsv"
+    if name.endswith(suffix):
+        return name[:-len(suffix)]
+    raise SystemExit("Missing --parent-packet-id and could not infer it from chunk queue.")
+
+
+def latest_rebuilt_json(outdir: Path, parent_packet_id: str) -> Path:
+    hits = sorted(
+        outdir.glob(f"{parent_packet_id}.ai_curation_samplemap_rebuilt.*.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not hits:
+        raise SystemExit(f"Sample-map rebuild did not produce expected JSON in {outdir}")
+    return hits[0]
+
+
 def summarize_peak_status(statuses):
     vals = [clean(x).lower() for x in statuses if clean(x)]
     if not vals:
@@ -71,15 +111,18 @@ def summarize_peak_status(statuses):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--parent-packet-id", required=True)
-    ap.add_argument("--chunk-queue", required=True)
+    ap.add_argument("--parent-packet-id", default="")
+    ap.add_argument("--chunk-queue", default="")
     ap.add_argument("--chunk-out-dir", default="outputs/06_CHIP_AI_ASSIST/17_chip_ai_chunk_actual")
     ap.add_argument("--main-queue", default=str(MAIN_QUEUE))
     ap.add_argument("--out-dir", default="outputs/06_CHIP_AI_ASSIST/18_chip_ai_chunk_merged")
+    ap.add_argument("--validation-out-dir", default=str(DEFAULT_VALIDATION_DIR))
+    ap.add_argument("--skip-repair-and-validation", action="store_true")
     args = ap.parse_args()
 
-    parent_packet_id = args.parent_packet_id
-    chunk_queue = pd.read_csv(args.chunk_queue, sep="\t", dtype=str).fillna("")
+    chunk_queue_path = Path(args.chunk_queue) if args.chunk_queue else infer_chunk_queue()
+    chunk_queue = pd.read_csv(chunk_queue_path, sep="\t", dtype=str).fillna("")
+    parent_packet_id = clean(args.parent_packet_id) or infer_parent_packet_id(chunk_queue_path, chunk_queue)
     main_queue = pd.read_csv(args.main_queue, sep="\t", dtype=str).fillna("")
     chunk_outdir = Path(args.chunk_out_dir)
     outdir = Path(args.out_dir) / parent_packet_id
@@ -158,7 +201,7 @@ def main():
     merged["chunk_merge_audit"] = {
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "parent_packet_id": parent_packet_id,
-        "chunk_queue": args.chunk_queue,
+        "chunk_queue": str(chunk_queue_path),
         "chunk_out_dir": str(chunk_outdir),
         "parent_table": str(parent_table_path),
         "active_chunk_jsons": active_chunk_jsons,
@@ -200,6 +243,42 @@ def main():
     print("Wrote summary:", summary_path)
     print()
     print(summary.to_string(index=False))
+
+    if args.skip_repair_and_validation:
+        return
+
+    rebuild_cmd = [
+        sys.executable,
+        "scripts/60b_rebuild_chip_sample_map_from_rowwise.py",
+        "--packet-id",
+        parent_packet_id,
+        "--ai-json",
+        str(out_json),
+        "--queue",
+        args.main_queue,
+    ]
+    print()
+    print("Rebuilding parent sample_map:")
+    print("  " + " ".join(rebuild_cmd))
+    subprocess.run(rebuild_cmd, check=True)
+
+    repaired_json = latest_rebuilt_json(outdir, parent_packet_id)
+    validate_cmd = [
+        sys.executable,
+        "scripts/60_validate_chip_ai_output.py",
+        "--packet-id",
+        parent_packet_id,
+        "--ai-json",
+        str(repaired_json),
+        "--queue",
+        args.main_queue,
+        "--out-dir",
+        args.validation_out_dir,
+    ]
+    print()
+    print("Validating repaired parent JSON:")
+    print("  " + " ".join(validate_cmd))
+    subprocess.run(validate_cmd, check=True)
 
 
 if __name__ == "__main__":

@@ -17,8 +17,26 @@ OUT = Path("outputs/06_CHIP_AI_ASSIST/23_study_summaries")
 TSV = OUT / "chip_ai_study_summaries_clean.tsv"
 MD = OUT / "CHIP_AI_STUDY_SUMMARIES_CLEAN.md"
 QC = OUT / "CHIP_AI_STUDY_SUMMARIES_FINAL_QC.md"
+SHARE_TSV = Path("outputs/06_CHIP_AI_ASSIST/22_curator_share_files/ChIP_Paper_Summaries.tsv")
 
 AP2_PARENT = "PMID_35288749__BIOPROJECT_PRJNA765872"
+
+NORMALIZED_COLUMNS = [
+    "packet_id",
+    "pmid",
+    "bioproject",
+    "assay_class",
+    "chip_peak_calling_ready",
+    "targets",
+    "organism_strain",
+    "summary",
+    "study_goal",
+    "main_axes",
+    "paper_evidence_locations",
+    "curator_warnings",
+    "technical_warnings",
+    "active_ai_json",
+]
 
 
 def clean(x):
@@ -49,6 +67,47 @@ def join_items(items):
             out.append(item)
             seen.add(key)
     return " | ".join(out)
+
+
+def summary_heading(row):
+    packet_id = clean(row.get("packet_id", ""))
+    pmid = clean(row.get("pmid", ""))
+    if packet_id.startswith("PMID_"):
+        return packet_id
+    if pmid:
+        suffix = packet_id or "CHIP_PACKET"
+        return f"PMID_{pmid}__{suffix}"
+    return packet_id or "UNKNOWN_CHIP_PACKET"
+
+
+def first_present(row, names, default=""):
+    for name in names:
+        value = clean(row.get(name, ""))
+        if value:
+            return value
+    return default
+
+
+def normalize_rows(src):
+    rows = []
+    for _, r in src.iterrows():
+        rows.append({
+            "packet_id": first_present(r, ["packet_id", "packet", "study_id"]),
+            "pmid": first_present(r, ["pmid", "PMID"]),
+            "bioproject": first_present(r, ["bioproject", "BioProject", "bio_project"]),
+            "assay_class": first_present(r, ["assay_class"], "ChIP-like target enrichment"),
+            "chip_peak_calling_ready": first_present(r, ["chip_peak_calling_ready", "peak_calling_ready"]),
+            "targets": first_present(r, ["targets", "target", "factor_tags"]),
+            "organism_strain": first_present(r, ["organism_strain", "strain", "organism"]),
+            "summary": first_present(r, ["summary", "one_sentence_summary", "curator_summary"]),
+            "study_goal": first_present(r, ["study_goal"]),
+            "main_axes": first_present(r, ["main_axes", "main_comparisons_or_sample_axes"]),
+            "paper_evidence_locations": first_present(r, ["paper_evidence_locations", "evidence_from_paper"]),
+            "curator_warnings": first_present(r, ["curator_warnings", "curator_warnings_clean", "warnings"]),
+            "technical_warnings": first_present(r, ["technical_warnings", "technical_warnings_clean"]),
+            "active_ai_json": first_present(r, ["active_ai_json"]),
+        })
+    return pd.DataFrame(rows, columns=NORMALIZED_COLUMNS)
 
 
 def is_pipeline_artifact(item):
@@ -115,6 +174,27 @@ def clean_technical_warnings(row):
     return join_items(items)
 
 
+def ensure_input_tsv():
+    OUT.mkdir(parents=True, exist_ok=True)
+    if TSV.exists():
+        src_path = TSV
+    elif SHARE_TSV.exists():
+        src_path = SHARE_TSV
+    else:
+        raise SystemExit(
+            f"Missing TSV: {TSV}. Also missing Step 42 export: {SHARE_TSV}. "
+            "Run chip-finalize through Step 42 before Step 43."
+        )
+
+    src = pd.read_csv(src_path, sep="\t", dtype=str).fillna("")
+    normalized = normalize_rows(src)
+    normalized.to_csv(TSV, sep="\t", index=False)
+    if src_path == SHARE_TSV:
+        print(f"Created Step 43 input from Step 42 export: {TSV}")
+    else:
+        print(f"Normalized Step 43 input: {TSV}")
+
+
 def write_markdown(df):
     lines = []
     lines.append("# ChIP AI Study Summaries, Cleaned")
@@ -130,28 +210,27 @@ def write_markdown(df):
     lines.append("")
 
     for _, r in df.iterrows():
-        lines.append(f"## {clean(r['packet_id'])}")
+        lines.append(f"## {summary_heading(r)}")
         lines.append("")
-        lines.append(f"- PMID: {clean(r['pmid'])}")
-        lines.append(f"- BioProject: {clean(r['bioproject'])}")
-        lines.append(f"- Assay class: {clean(r['assay_class'])}")
-        lines.append(f"- Peak-calling readiness: {clean(r['chip_peak_calling_ready'])}")
-        lines.append(f"- Targets: {clean(r['targets'])}")
-        lines.append(f"- Organism/strain: {clean(r['organism_strain'])}")
-        lines.append(f"- Summary: {clean(r['summary'])}")
-        lines.append(f"- Study goal: {clean(r['study_goal'])}")
-        lines.append(f"- Main axes: {clean(r['main_axes'])}")
-        lines.append(f"- Paper evidence locations: {clean(r['paper_evidence_locations'])}")
-        lines.append(f"- Curator warnings: {clean(r['curator_warnings']) or 'none'}")
-        lines.append(f"- Technical warnings: {clean(r['technical_warnings']) or 'none'}")
+        lines.append(f"- PMID: {clean(r.get('pmid', ''))}")
+        lines.append(f"- BioProject: {clean(r.get('bioproject', ''))}")
+        lines.append(f"- Assay class: {clean(r.get('assay_class', '')) or 'unknown'}")
+        lines.append(f"- Peak-calling readiness: {clean(r.get('chip_peak_calling_ready', ''))}")
+        lines.append(f"- Targets: {clean(r.get('targets', ''))}")
+        lines.append(f"- Organism/strain: {clean(r.get('organism_strain', ''))}")
+        lines.append(f"- Summary: {clean(r.get('summary', ''))}")
+        lines.append(f"- Study goal: {clean(r.get('study_goal', ''))}")
+        lines.append(f"- Main axes: {clean(r.get('main_axes', ''))}")
+        lines.append(f"- Paper evidence locations: {clean(r.get('paper_evidence_locations', ''))}")
+        lines.append(f"- Curator warnings: {clean(r.get('curator_warnings', '')) or 'none'}")
+        lines.append(f"- Technical warnings: {clean(r.get('technical_warnings', '')) or 'none'}")
         lines.append("")
 
     MD.write_text("\n".join(lines))
 
 
 def main():
-    if not TSV.exists():
-        raise SystemExit(f"Missing TSV: {TSV}")
+    ensure_input_tsv()
 
     df = pd.read_csv(TSV, sep="\t", dtype=str).fillna("")
 

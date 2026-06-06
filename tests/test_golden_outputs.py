@@ -29,10 +29,10 @@ LATEST_POINTER = ROOT / "results/LATEST_FINAL_CURATOR_RELEASE.txt"
 
 
 EXPECTED = {
-    "rna_study_summary_rows": 69,
-    "chip_study_summary_rows": 42,
-    "chip_rowwise_rows": 733,
-    "chip_target_control_rows": 490,
+    "rna_study_summary_rows": 70,
+    "chip_study_summary_rows": 43,
+    "chip_rowwise_rows": 737,
+    "chip_target_control_rows": 492,
 }
 
 
