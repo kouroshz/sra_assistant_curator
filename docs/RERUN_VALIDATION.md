@@ -162,12 +162,19 @@ python workflows/run_workflow_step.py --step 07 --execute --execute-ai
 
 The workflow wrapper refuses AI-capable execution without `--execute --execute-ai` and `AGENTIC_AI_ENABLE_API=1`. Batch runners also refuse `--execute` without `OPENAI_API_KEY`. The key can come from `.env` or exported shell variables and is never printed.
 
-## 7. Post-AI Deterministic RNA Steps
-
-After AI JSONs exist, continue deterministic validation, repair, inventory, semantic review, summaries, and curator workbook generation:
+The named AI recipes are intentionally explicit about pilot versus full runs:
 
 ```bash
-python workflows/run_workflow_step.py --continue-from 08 --through 15 --execute
+python workflows/run_recipe.py rna-ai --execute --execute-ai       # pilot/default-limited
+python workflows/run_recipe.py rna-ai-full --execute --execute-ai  # full trusted queue, --limit 0
+```
+
+## 7. Post-AI Deterministic RNA Steps
+
+After AI JSONs exist, continue aggregate inventory, semantic review, summaries, and curator workbook generation:
+
+```bash
+python workflows/run_recipe.py rna-finalize --execute
 ```
 
 Do not edit curator-facing Excel formatting logic during rerun validation.
@@ -208,7 +215,18 @@ AGENTIC_AI_ENABLE_API=1 \
 python workflows/run_workflow_step.py --step 33 --execute --execute-ai
 ```
 
-Post-AI ChIP validation, repair, inventory, final QC, workbook generation, and companion exports run through steps 36-43.
+The named ChIP AI recipes are:
+
+```bash
+python workflows/run_recipe.py chip-ai --execute --execute-ai       # pilot/default-limited
+python workflows/run_recipe.py chip-ai-full --execute --execute-ai  # full small-packet queue, --limit 0
+```
+
+Post-AI ChIP aggregate inventory, final QC, workbook generation, companion exports, and summary cleanup run through:
+
+```bash
+python workflows/run_recipe.py chip-finalize --execute
+```
 
 ## 9. Final Release Packaging
 

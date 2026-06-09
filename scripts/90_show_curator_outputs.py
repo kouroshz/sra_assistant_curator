@@ -6,6 +6,7 @@ Print curator-facing output locations without modifying files.
 from __future__ import annotations
 
 import argparse
+import re
 import shlex
 from pathlib import Path
 
@@ -67,6 +68,19 @@ def print_item(label: str, path: Path) -> bool:
     return exists
 
 
+def final_qc_verdict(path: Path) -> str:
+    if not path.exists():
+        return "MISSING"
+    text = path.read_text(errors="ignore")
+    match = re.search(r"## Final verdict\s+([A-Z]+)", text)
+    if not match:
+        return "UNKNOWN"
+    verdict = match.group(1)
+    if verdict in {"PASS", "FAIL", "PARTIAL"}:
+        return verdict
+    return "UNKNOWN"
+
+
 def latest_match(pattern: Path) -> Path | None:
     text = str(pattern)
     if not any(ch in text for ch in "*?["):
@@ -98,7 +112,14 @@ def main() -> None:
     print("## Curator-facing files")
     existing_files: list[Path] = []
     for label, path in CURATOR_FILES:
-        if print_item(label, path):
+        if label == "Final QC report":
+            exists = path.exists()
+            verdict = final_qc_verdict(path)
+            status = verdict if exists else "MISSING"
+            print(f"- {status} {label}: {rel(path)} ({format_size(path)})")
+        else:
+            exists = print_item(label, path)
+        if exists:
             existing_files.append(path)
 
     if zip_path:
@@ -118,8 +139,10 @@ def main() -> None:
             print("- none found yet")
         print("")
         print("Recipes likely still needed:")
-        print("- RNA workbook and summaries: python workflows/run_recipe.py rna-finalize --execute")
-        print("- ChIP workbook and summaries: python workflows/run_recipe.py chip-finalize --execute")
+        if not (FINAL_RELEASE / "RNA/RNA_curator_review.xlsx").exists() or not (FINAL_RELEASE / "RNA/RNA_AI_STUDY_SUMMARIES_CLEAN.md").exists():
+            print("- RNA workbook and summaries: python workflows/run_recipe.py rna-finalize --execute")
+        if not (FINAL_RELEASE / "ChIP/ChIP_curator_review.xlsx").exists() or not (FINAL_RELEASE / "ChIP/CHIP_AI_STUDY_SUMMARIES_CLEAN.md").exists():
+            print("- ChIP workbook and summaries: python workflows/run_recipe.py chip-finalize --execute")
         print("- Final release folder and zip: python workflows/run_recipe.py package --execute")
 
     if args.with_open_command and existing_files:

@@ -60,6 +60,27 @@ def read_validation_status(packet_id: str) -> str:
     return clean(df.loc[0, "validation_status"])
 
 
+def read_validation_issue_checks(packet_id: str) -> set[str]:
+    p = VALIDATION_DIR / f"{packet_id}.chip_ai_validation_issues.tsv"
+    if not p.exists():
+        return set()
+    df = pd.read_csv(p, sep="\t", dtype=str).fillna("")
+    if "check" not in df.columns:
+        return set()
+    return set(df["check"].map(clean))
+
+
+def has_retryable_rowwise_coverage_failure(packet_id: str) -> bool:
+    checks = read_validation_issue_checks(packet_id)
+    retryable = {
+        "rowwise_count_mismatch",
+        "rowwise_missing_source_row_id",
+        "rowwise_duplicate_source_row_id",
+        "rowwise_extra_source_row_id",
+    }
+    return bool(checks & retryable)
+
+
 def latest_repaired_json(outdir: Path, packet_id: str) -> str:
     packet_dir = outdir / packet_id
     hits = sorted(
@@ -82,6 +103,7 @@ def main():
     ap.add_argument("--max-pdf-chars", type=int, default=120000)
     ap.add_argument("--max-rowwise-rows", type=int, default=250)
     ap.add_argument("--max-rowwise-chars", type=int, default=100000)
+    ap.add_argument("--structural-retries", type=int, default=2, help="Retry AI output when validation shows rowwise source_row_id coverage errors.")
     args = ap.parse_args()
 
     if load_dotenv is not None:
@@ -173,6 +195,7 @@ def main():
             "recommended_action": clean(r.get("assay_aware_recommended_action", "")),
             "run_status": "dry_run_only" if not args.execute else "started",
             "validation_before_repair": "",
+            "structural_retries_attempted": "0",
             "repair_attempted": "false",
             "validation_after_repair": "",
             "final_status": "",
@@ -212,6 +235,24 @@ def main():
         proc = run_cmd(cmd_val, execute=True)
         before = read_validation_status(packet_id)
         result["validation_before_repair"] = before
+
+        retries_attempted = 0
+        while before != "PASS" and retries_attempted < args.structural_retries and has_retryable_rowwise_coverage_failure(packet_id):
+            retries_attempted += 1
+            print(
+                f"Retryable structural rowwise coverage failure for {packet_id}; "
+                f"retrying AI run {retries_attempted}/{args.structural_retries}.",
+                flush=True,
+            )
+            proc = run_cmd(cmd_run, execute=True)
+            if proc.returncode != 0:
+                result["run_status"] = f"ai_retry_failed_returncode_{proc.returncode}"
+                break
+            proc = run_cmd(cmd_val, execute=True)
+            before = read_validation_status(packet_id)
+            result["validation_before_repair"] = before
+
+        result["structural_retries_attempted"] = str(retries_attempted)
 
         if before == "PASS":
             result["final_status"] = "PASS"

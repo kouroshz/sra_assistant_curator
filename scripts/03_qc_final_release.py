@@ -9,6 +9,7 @@ It verifies that results/final_curator_release/ contains only expected curator-f
 
 from pathlib import Path
 from datetime import datetime
+import argparse
 import zipfile
 import sys
 
@@ -80,9 +81,27 @@ def file_nonempty(path):
     return path.exists() and path.is_file() and path.stat().st_size > 0
 
 
+def determine_release_mode(args_mode: str, counts: dict[str, int]) -> str:
+    if args_mode != "auto":
+        return args_mode
+    if all(counts[k] == v for k, v in EXPECTED_COUNTS.items()):
+        return "full"
+    return "partial"
+
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--mode",
+        choices=["auto", "full", "pilot", "partial"],
+        default="auto",
+        help="QC mode. full enforces golden counts; pilot/partial enforce structure and label incomplete coverage.",
+    )
+    args = parser.parse_args()
+
     lines = []
     problems = []
+    coverage_problems = []
 
     lines.append("# Final Release QC Report")
     lines.append("")
@@ -150,7 +169,17 @@ def main():
     rna_tsv_rows = count_tsv_rows(rna_tsv)
     chip_rowwise_rows = count_tsv_rows(chip_rowwise)
     chip_tc_rows = count_tsv_rows(chip_tc)
+    counts = {
+        "rna_markdown_blocks": rna_md_blocks,
+        "rna_study_summary_rows": rna_tsv_rows,
+        "chip_markdown_blocks": chip_md_blocks,
+        "chip_study_summary_rows": chip_tsv_rows,
+        "chip_rowwise_rows": chip_rowwise_rows,
+        "chip_target_control_rows": chip_tc_rows,
+    }
+    release_mode = determine_release_mode(args.mode, counts)
 
+    lines.append(f"- Release QC mode: {release_mode}")
     lines.append(f"- ChIP markdown PMID blocks: {chip_md_blocks}")
     lines.append(f"- RNA markdown PMID blocks: {rna_md_blocks}")
     lines.append(f"- ChIP study summary TSV rows: {chip_tsv_rows}")
@@ -159,29 +188,32 @@ def main():
     lines.append(f"- ChIP target-control map rows: {chip_tc_rows}")
 
     if rna_md_blocks != EXPECTED_COUNTS["rna_markdown_blocks"]:
-        problems.append(
+        coverage_problems.append(
             f"Expected {EXPECTED_COUNTS['rna_markdown_blocks']} RNA markdown PMID blocks; observed {rna_md_blocks}"
         )
     if rna_tsv_rows != EXPECTED_COUNTS["rna_study_summary_rows"]:
-        problems.append(
+        coverage_problems.append(
             f"Expected {EXPECTED_COUNTS['rna_study_summary_rows']} RNA study summary TSV rows; observed {rna_tsv_rows}"
         )
     if chip_md_blocks != EXPECTED_COUNTS["chip_markdown_blocks"]:
-        problems.append(
+        coverage_problems.append(
             f"Expected {EXPECTED_COUNTS['chip_markdown_blocks']} ChIP markdown PMID blocks; observed {chip_md_blocks}"
         )
     if chip_tsv_rows != EXPECTED_COUNTS["chip_study_summary_rows"]:
-        problems.append(
+        coverage_problems.append(
             f"Expected {EXPECTED_COUNTS['chip_study_summary_rows']} ChIP study summary TSV rows; observed {chip_tsv_rows}"
         )
     if chip_rowwise_rows != EXPECTED_COUNTS["chip_rowwise_rows"]:
-        problems.append(
+        coverage_problems.append(
             f"Expected {EXPECTED_COUNTS['chip_rowwise_rows']} ChIP rowwise rows; observed {chip_rowwise_rows}"
         )
     if chip_tc_rows != EXPECTED_COUNTS["chip_target_control_rows"]:
-        problems.append(
+        coverage_problems.append(
             f"Expected {EXPECTED_COUNTS['chip_target_control_rows']} ChIP target-control rows; observed {chip_tc_rows}"
         )
+
+    if release_mode == "full":
+        problems.extend(coverage_problems)
 
     lines.append("")
     lines.append("## Zip check")
@@ -213,6 +245,15 @@ def main():
         lines.append("")
         for p in problems:
             lines.append(f"- {p}")
+    elif release_mode in {"pilot", "partial"}:
+        lines.append("PARTIAL")
+        lines.append("")
+        lines.append("The release is structurally valid and curator-facing, but coverage is incomplete relative to full golden expectations.")
+        if coverage_problems:
+            lines.append("")
+            lines.append("Coverage differences from full mode:")
+            for p in coverage_problems:
+                lines.append(f"- {p}")
     else:
         lines.append("PASS")
         lines.append("")

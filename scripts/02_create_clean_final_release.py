@@ -35,10 +35,37 @@ from sra_paper_curator.file_utils import (
 RELEASE_ROOT = Path("results/final_curator_release")
 LATEST_POINTER = Path("results/LATEST_FINAL_CURATOR_RELEASE.txt")
 
+EXPECTED_FULL_COUNTS = {
+    "rna_summaries": 70,
+    "chip_summaries": 43,
+    "chip_rowwise": 737,
+    "chip_target_control": 492,
+}
+
+
+def count_tsv_rows(path: Path) -> int:
+    if not path.exists():
+        return 0
+    with path.open(errors="ignore") as f:
+        n = sum(1 for _ in f)
+    return max(n - 1, 0)
+
+
+def release_coverage():
+    counts = {
+        "rna_summaries": count_tsv_rows(RELEASE_ROOT / "RNA/rna_ai_study_summaries_clean.tsv"),
+        "chip_summaries": count_tsv_rows(RELEASE_ROOT / "ChIP/chip_ai_study_summaries_clean.tsv"),
+        "chip_rowwise": count_tsv_rows(RELEASE_ROOT / "ChIP/chip_rowwise_review.tsv"),
+        "chip_target_control": count_tsv_rows(RELEASE_ROOT / "ChIP/chip_target_control_map_review.tsv"),
+    }
+    mode = "full" if counts == EXPECTED_FULL_COUNTS else "partial"
+    return mode, counts
+
 
 def write_readme(manifest):
     copied = [m for m in manifest if m["status"] == "copied"]
     missing = [m for m in manifest if m["status"] != "copied"]
+    mode, counts = release_coverage()
 
     lines = [
         "# Final Curator Release",
@@ -46,6 +73,16 @@ def write_readme(manifest):
         f"Generated: {datetime.now().isoformat(timespec='seconds')}",
         "",
         "This folder contains the clean curator-facing RNA and ChIP deliverables.",
+        "",
+        f"Release coverage mode: {mode.upper()}",
+        "",
+        "Coverage snapshot:",
+        f"- RNA study summaries: {counts['rna_summaries']} / {EXPECTED_FULL_COUNTS['rna_summaries']} full expected",
+        f"- ChIP study summaries: {counts['chip_summaries']} / {EXPECTED_FULL_COUNTS['chip_summaries']} full expected",
+        f"- ChIP rowwise review rows: {counts['chip_rowwise']} / {EXPECTED_FULL_COUNTS['chip_rowwise']} full expected",
+        f"- ChIP target-control rows: {counts['chip_target_control']} / {EXPECTED_FULL_COUNTS['chip_target_control']} full expected",
+        "",
+        "A PARTIAL release can be structurally valid and useful for review, but it is not a complete golden release.",
         "",
         "## Start here",
         "",

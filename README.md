@@ -4,6 +4,8 @@ A curator-assistance workflow for turning public SRA/GEO metadata plus paper con
 
 The workflow is built around deterministic metadata processing, validation, audit trails, and human curator review. AI can optionally assist with paper interpretation, but it is off by default and never bypasses deterministic checks.
 
+The input Excel files are starting manifests, not authoritative final evidence. Public SRA RunInfo/BioSample caches are rebuilt as an auditable evidence layer, deterministic rules provide reproducible first-pass annotations, and optional AI interprets paper/study design to suggest corrections and warnings. Human curator review remains authoritative. See `docs/CURATOR_WORKFLOW_OVERVIEW.md` for the curator-facing explanation.
+
 ## What You Need
 
 Required local workbooks:
@@ -171,8 +173,10 @@ Then use recipe commands with both `--execute` and `--execute-ai`.
 
 AI recipes:
 
-- `rna-ai`: RNA batch AI review
-- `chip-ai`: ChIP small-packet AI review
+- `rna-ai`: RNA pilot/default-limited batch AI review
+- `rna-ai-full`: RNA full trusted-queue run using `--limit 0`
+- `chip-ai`: ChIP pilot/default-limited small-packet AI review
+- `chip-ai-full`: ChIP full small-packet run using `--limit 0`
 - `rna-finalize`: deterministic RNA aggregate QC, summaries, workbook, and finalization
 - `chip-finalize`: deterministic ChIP aggregate QC, workbook, companion files, summaries, and finalization
 
@@ -181,6 +185,8 @@ Examples:
 ```bash
 python workflows/run_recipe.py rna-ai --execute --execute-ai
 python workflows/run_recipe.py chip-ai --execute --execute-ai
+python workflows/run_recipe.py rna-ai-full --execute --execute-ai
+python workflows/run_recipe.py chip-ai-full --execute --execute-ai
 ```
 
 After AI JSONs exist, continue the deterministic aggregate QC, inventory, workbook, summary, and release-generation steps. See `docs/RERUN_VALIDATION.md` for the full RNA and ChIP command sequence, including ChIP chunked-packet handling.

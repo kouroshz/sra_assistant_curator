@@ -161,7 +161,16 @@ def main():
         exp_role = expected_role.get(sid, "")
 
         if exp_role and ai_role and ai_role != exp_role:
-            add_issue(issues, "FAIL", "sample_role_mismatch", sid, f"expected_prelim={exp_role}; ai={ai_role}")
+            if exp_role == "target_ip" and ai_role == "control_sample":
+                add_issue(
+                    issues,
+                    "REVIEW",
+                    "role_function_conflict",
+                    sid,
+                    "physical_sample_role=target_ip; analysis_function may be matched_background/reference_chromatin_control; ai=control_sample",
+                )
+            else:
+                add_issue(issues, "FAIL", "sample_role_mismatch", sid, f"expected_prelim={exp_role}; ai={ai_role}")
 
         if exp_role and not ai_role:
             add_issue(issues, "FAIL", "missing_suggested_sample_role", sid, f"expected_prelim={exp_role}; ai blank")

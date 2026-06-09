@@ -26,6 +26,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from datetime import datetime
+from http.client import IncompleteRead, RemoteDisconnected
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
@@ -41,6 +42,8 @@ TOOL = "sra_paper_curator_chip_entrez_publication_resolver"
 EMAIL = os.environ.get("NCBI_EMAIL", "")
 API_KEY = os.environ.get("NCBI_API_KEY", "")
 SLEEP = 0.12 if API_KEY else 0.36
+ROUTE_FAILURES: list[dict[str, str]] = []
+EUTILS_FAILURES: list[dict[str, str]] = []
 
 IN_GROUPS = Path("outputs/06_CHIP_AI_ASSIST/03_public_metadata/chip_publication_signal_by_bioproject.tsv")
 IN_AP2 = Path("outputs/06_CHIP_AI_ASSIST/03_public_metadata/chip_ap2_publication_signal_by_bioproject.tsv")
@@ -89,7 +92,7 @@ def extract_tokens(text: str, prefix: str, limit: int = 25) -> list[str]:
     return vals[:limit]
 
 
-def eutils(endpoint: str, params: dict, retmode: str = "json", max_tries: int = 3):
+def eutils(endpoint: str, params: dict, retmode: str = "json", max_tries: int = 4):
     p = dict(params)
     p["tool"] = TOOL
     if EMAIL:
@@ -111,12 +114,49 @@ def eutils(endpoint: str, params: dict, retmode: str = "json", max_tries: int = 
             if retmode == "json":
                 return json.loads(raw)
             return raw
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as e:
+        except (
+            IncompleteRead,
+            RemoteDisconnected,
+            HTTPError,
+            URLError,
+            TimeoutError,
+            json.JSONDecodeError,
+            ConnectionResetError,
+            OSError,
+        ) as e:
             last_err = e
-            time.sleep(0.7 * attempt)
+            time.sleep(min(8.0, 0.8 * attempt))
 
     print(f"WARNING: failed {endpoint} {params}: {last_err}")
+    EUTILS_FAILURES.append({
+        "endpoint": endpoint,
+        "params": str(params)[:500],
+        "error": f"{type(last_err).__name__}: {last_err}"[:500],
+    })
     return {} if retmode == "json" else ""
+
+
+def safe_route(route: str, bioproject: str, func, *args):
+    try:
+        return func(*args)
+    except (
+        IncompleteRead,
+        RemoteDisconnected,
+        HTTPError,
+        URLError,
+        TimeoutError,
+        json.JSONDecodeError,
+        ConnectionResetError,
+        OSError,
+    ) as e:
+        msg = f"{type(e).__name__}: {e}"
+        ROUTE_FAILURES.append({
+            "bioproject": clean(bioproject),
+            "route": route,
+            "error": msg[:500],
+        })
+        print(f"WARNING: route {route} failed for {bioproject}: {msg}")
+        return []
 
 
 def esearch(db: str, term: str, retmax: int = 30) -> list[str]:
@@ -331,16 +371,16 @@ def main():
 
         route_map = {}
 
-        route_map["existing_paper_link"] = route_existing(row)
-        route_map["bioproject_elink_pubmed"] = route_bioproject_elink(bp)
-        route_map["sra_elink_by_bioproject"] = route_sra_elink_by_bioproject(bp)
-        route_map["gds_elink_by_geo_tokens"] = route_gds_elink_by_geo_tokens(toks)
-        route_map["sra_elink_by_sra_tokens"] = route_sra_elink_by_sra_tokens(toks)
-        route_map["pubmed_search_bioproject"] = route_pubmed_search_bioproject(bp)
+        route_map["existing_paper_link"] = safe_route("existing_paper_link", bp, route_existing, row)
+        route_map["bioproject_elink_pubmed"] = safe_route("bioproject_elink_pubmed", bp, route_bioproject_elink, bp)
+        route_map["sra_elink_by_bioproject"] = safe_route("sra_elink_by_bioproject", bp, route_sra_elink_by_bioproject, bp)
+        route_map["gds_elink_by_geo_tokens"] = safe_route("gds_elink_by_geo_tokens", bp, route_gds_elink_by_geo_tokens, toks)
+        route_map["sra_elink_by_sra_tokens"] = safe_route("sra_elink_by_sra_tokens", bp, route_sra_elink_by_sra_tokens, toks)
+        route_map["pubmed_search_bioproject"] = safe_route("pubmed_search_bioproject", bp, route_pubmed_search_bioproject, bp)
 
         # Use target search mainly for AP2 or unresolved groups to avoid noise.
         if is_ap2 or not any(route_map.values()):
-            route_map["pubmed_search_targets"] = route_pubmed_search_targets(row)
+            route_map["pubmed_search_targets"] = safe_route("pubmed_search_targets", bp, route_pubmed_search_targets, row)
         else:
             route_map["pubmed_search_targets"] = []
 
@@ -447,11 +487,15 @@ def main():
     summary_path = OUT / "chip_entrez_publication_resolution_by_bioproject.tsv"
     ap2_path = OUT / "chip_ap2_entrez_publication_resolution.tsv"
     backfill_path = OUT / "chip_publication_backfill_suggestions.tsv"
+    route_failures_path = OUT / "chip_entrez_route_failures.tsv"
+    eutils_failures_path = OUT / "chip_entrez_eutils_failures.tsv"
 
     candidates.to_csv(candidates_path, sep="\t", index=False)
     summary.to_csv(summary_path, sep="\t", index=False)
     ap2.to_csv(ap2_path, sep="\t", index=False)
     backfill.to_csv(backfill_path, sep="\t", index=False)
+    pd.DataFrame(ROUTE_FAILURES, columns=["bioproject", "route", "error"]).to_csv(route_failures_path, sep="\t", index=False)
+    pd.DataFrame(EUTILS_FAILURES, columns=["endpoint", "params", "error"]).to_csv(eutils_failures_path, sep="\t", index=False)
 
     report = []
     report.append("# ChIP Entrez Publication Resolution Report")
@@ -468,6 +512,8 @@ def main():
     report.append(f"- AP2 groups queried: {int(summary['is_ap2_group'].sum()) if not summary.empty else 0}")
     report.append(f"- groups with at least one candidate: {int((summary['n_candidates'].astype(int) > 0).sum()) if not summary.empty else 0}")
     report.append(f"- groups with auto backfill suggestion: {len(backfill)}")
+    report.append(f"- route-level failures recovered without aborting workflow: {len(ROUTE_FAILURES)}")
+    report.append(f"- E-utilities request failures recovered by returning no candidates: {len(EUTILS_FAILURES)}")
     report.append("")
     report.append("## Confidence counts")
     report.append("")
@@ -504,6 +550,8 @@ def main():
     report.append("")
     for p in [candidates_path, summary_path, ap2_path, backfill_path]:
         report.append(f"- `{p}`")
+    report.append(f"- `{route_failures_path}`")
+    report.append(f"- `{eutils_failures_path}`")
 
     report_path = OUT / "CHIP_ENTREZ_PUBLICATION_RESOLUTION_REPORT.md"
     report_path.write_text("\n".join(report))
@@ -512,7 +560,17 @@ def main():
     print("Wrote:", summary_path)
     print("Wrote:", ap2_path)
     print("Wrote:", backfill_path)
+    print("Wrote:", route_failures_path)
+    print("Wrote:", eutils_failures_path)
     print("Wrote:", report_path)
+    print()
+    print("Publication resolution complete with route-level failures recorded separately.")
+    print(f"Groups processed: {len(summary)}")
+    print(f"Groups with candidates: {int((summary['n_candidates'].astype(int) > 0).sum()) if not summary.empty else 0}")
+    print(f"Auto backfill suggestions: {len(backfill)}")
+    print(f"Route failures: {len(ROUTE_FAILURES)}")
+    print(f"E-utilities failures: {len(EUTILS_FAILURES)}")
+    print("Next step: python workflows/run_workflow_step.py --step 25 --execute")
     print()
     print("Confidence counts:")
     print(summary["resolution_confidence"].value_counts().to_string())

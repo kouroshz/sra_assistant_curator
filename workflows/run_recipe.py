@@ -43,9 +43,14 @@ RECIPES = {
         "command": ["workflow", "--continue-from", "20", "--through", "32"],
     },
     "rna-ai": {
-        "description": "RNA AI batch review. Requires --execute --execute-ai and API guards for real API execution.",
+        "description": "RNA AI pilot batch review, limited by the batch runner default. Requires --execute --execute-ai and API guards.",
         "ai": True,
         "command": ["workflow", "--step", "07", "--extra-args-on-execute", "--execute"],
+    },
+    "rna-ai-full": {
+        "description": "RNA AI full trusted-queue run with --limit 0. Requires --execute --execute-ai and API guards.",
+        "ai": True,
+        "command": ["workflow", "--step", "07", "--extra-args-on-execute", "--execute", "--limit", "0"],
     },
     "rna-finalize": {
         "description": "Deterministic RNA aggregate inventory, QC, summaries, workbook, and finalization after RNA AI.",
@@ -61,9 +66,14 @@ RECIPES = {
         ],
     },
     "chip-ai": {
-        "description": "ChIP small-packet AI batch review. Requires --execute --execute-ai and API guards for real API execution.",
+        "description": "ChIP small-packet AI pilot batch review, limited by the batch runner default. Requires --execute --execute-ai and API guards.",
         "ai": True,
         "command": ["workflow", "--step", "33", "--extra-args-on-execute", "--execute"],
+    },
+    "chip-ai-full": {
+        "description": "ChIP full small-packet AI run with --limit 0. Requires --execute --execute-ai and API guards.",
+        "ai": True,
+        "command": ["workflow", "--step", "33", "--extra-args-on-execute", "--execute", "--limit", "0"],
     },
     "chip-finalize": {
         "description": "Deterministic ChIP aggregate inventory, final QC, workbook, companion files, and summaries after ChIP AI.",
@@ -178,6 +188,12 @@ def main() -> None:
         if os.environ.get("AGENTIC_AI_ENABLE_API") != "1":
             raise SystemExit(
                 f"Recipe {args.recipe} requires AGENTIC_AI_ENABLE_API=1 in .env or shell for API-capable execution."
+            )
+        if args.recipe in {"rna-ai", "chip-ai"}:
+            print(
+                f"NOTICE: {args.recipe} is a pilot/default-limited AI run. "
+                f"Use {args.recipe}-full for --limit 0 full-queue execution.",
+                flush=True,
             )
 
     commands = build_commands(recipe, execute=args.execute, execute_ai=args.execute_ai)
